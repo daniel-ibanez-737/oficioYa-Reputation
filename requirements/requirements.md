@@ -16,10 +16,10 @@ El sistema de Reputation (OficioYa) debe tener los siguientes requerimientos:
 
 ### 1.2 Requerimientos no funcionales
 
-2. Cobertura de pruebas unitarias mínima del 80%.
-3. La interfaz de calificación debe ser responsive.
-4. El sistema debe registrar logs de cada calificación y cada pausado automático.
-5. El identificador de cada reseña debe ser único y trazable al servicio que la originó.
+1. Cobertura de pruebas unitarias mínima del 80%.
+2. La interfaz de calificación debe ser responsive.
+3. El sistema debe registrar logs de cada calificación y cada pausado automático.
+4. El identificador de cada reseña debe ser único y trazable al servicio que la originó.
 
 ## 2. Diagramas de caso de uso
 
