@@ -12,6 +12,7 @@ El sistema de Reputation (OficioYa) debe tener los siguientes requerimientos:
 4. Permitir a un usuario reportar una reseña que considere falsa o inapropiada.
 5. Pausar automáticamente a un trabajador cuyo promedio sea inferior a 3 estrellas en sus últimas 5 reseñas.
 6. Aplicar una penalización de 0,5 puntos a la reputación del trabajador cuando cancele una solicitud después del límite de 24 horas.
+7. Asociar cada calificación y reseña al servicio que la originó.
 
 ### 1.2 Requerimientos no funcionales
 
@@ -95,3 +96,14 @@ El sistema de Reputation (OficioYa) debe tener los siguientes requerimientos:
 | **Actor** | *Sistema (proceso automático)* |
 | **Flujo principal** | 1. Contratación notifica una cancelación tardía.<br>2. Reputation recibe el evento.<br>3. Descuenta 0,5 puntos del promedio. |
 | **Poscondiciones** | *La reputación queda penalizada y reflejada en el perfil.* |
+
+### 2.7 Requerimiento Funcional 7
+| Campo | Descripción |
+|------|-------------|
+| ID | RF-07 |
+| Nombre del requerimiento | Asociación de reseña con el servicio realizado |
+| Descripción | El sistema debe asociar cada calificación y reseña al servicio que la originó |
+| Precondiciones | Debe existir un servicio finalizado y habilitado para calificación |
+| Actor | Sistema (proceso automático) |
+| Flujo principal | 1. El trabajador o contratante registra una calificación asociada a un servicio finalizado.<br>2. El sistema identifica el servicio correspondiente.<br>3. El sistema registra la reseña vinculándola al identificador del servicio que la originó. |
+| Poscondiciones | La reseña queda registrada y asociada de forma trazable al servicio correspondiente. |
