@@ -20,6 +20,9 @@ El sistema de Reputation (OficioYa) debe tener los siguientes requerimientos:
 2. La interfaz de calificación debe ser responsive.
 3. El sistema debe registrar logs de cada calificación y cada pausado automático.
 4. El identificador de cada reseña debe ser único y trazable al servicio que la originó.
+5. El sistema deberá garantizar la integridad de las calificaciones y reseñas registradas.
+6. Las operaciones relacionadas con calificaciones, reseñas y reportes deberán estar protegidas mediante autenticación y autorización.
+7. Las acciones administrativas relacionadas con reseñas reportadas deberán quedar registradas para su posterior revisión.
 
 ## 2. Diagramas de caso de uso
 
