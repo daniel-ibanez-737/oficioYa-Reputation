@@ -1,0 +1,5 @@
+# Datos de prueba para la demo del frontend. Se activa junto con demo: --spring.profiles.active=demo,datos-demo
+# Va aparte del perfil demo porque la colección de Postman usa ese perfil sobre una base vacía.
+spring:
+  flyway:
+    locations: classpath:db/migration,classpath:db/demo
