@@ -1,0 +1,875 @@
+{
+  "info": {
+    "name": "OficioYa · Reputation (Squad 5)",
+    "description": "Casos de aceptación del sprint 3 de Reputation (Squad 5).\n\nCómo usarla:\n1. Levantar el servicio: `docker compose up -d` (PostgreSQL) y luego `./mvnw spring-boot:run -Dspring-boot.run.profiles=demo`.\n2. Ejecutar la colección completa (Run collection). Los JWT de cada rol se generan solos en el pre-request con el secreto de desarrollo (`jwtSecret`).\n3. Para apuntar a otro entorno, cambiar `reputationUrl` y `jwtSecret`.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Genera JWT HS256 de desarrollo para cada rol (mismo secreto que application.yml).",
+          "// Así no hay que pegar tokens a mano. En producción los emite Identity (Squad 1).",
+          "const cripto = require('crypto-js');",
+          "function b64url(palabras) {",
+          "    return cripto.enc.Base64.stringify(palabras).replace(/=+$/, '').replace(/\\+/g, '-').replace(/\\//g, '_');",
+          "}",
+          "function token(sub, rol) {",
+          "    const ahora = Math.floor(Date.now() / 1000);",
+          "    const cabecera = b64url(cripto.enc.Utf8.parse(JSON.stringify({ alg: 'HS256', typ: 'JWT' })));",
+          "    const cuerpo = b64url(cripto.enc.Utf8.parse(JSON.stringify({ sub: String(sub), roles: [rol], iat: ahora, exp: ahora + 3600 })));",
+          "    const firma = b64url(cripto.HmacSHA256(cabecera + '.' + cuerpo, pm.collectionVariables.get('jwtSecret')));",
+          "    return cabecera + '.' + cuerpo + '.' + firma;",
+          "}",
+          "pm.collectionVariables.set('token_contratante', token(pm.collectionVariables.get('contratanteId'), 'ROLE_CONTRATANTE'));",
+          "pm.collectionVariables.set('token_trabajador', token(pm.collectionVariables.get('trabajadorId'), 'ROLE_TRABAJADOR'));",
+          "pm.collectionVariables.set('token_admin', token(1, 'ROLE_ADMINISTRADOR'));",
+          "pm.collectionVariables.set('token_sistema', token(0, 'ROLE_SISTEMA'));"
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "reputationUrl",
+      "value": "http://localhost:8082"
+    },
+    {
+      "key": "jwtSecret",
+      "value": "cambiar-este-secreto-de-desarrollo-de-al-menos-32-bytes"
+    },
+    {
+      "key": "trabajadorId",
+      "value": "101"
+    },
+    {
+      "key": "contratanteId",
+      "value": "201"
+    }
+  ],
+  "item": [
+    {
+      "name": "Reputation",
+      "item": [
+        {
+          "name": "Evento · Service avisa servicio cumplido (A)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_sistema}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{reputationUrl}}/api/v1/reputation/eventos/servicios-cumplidos",
+              "host": [
+                "{{reputationUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "reputation",
+                "eventos",
+                "servicios-cumplidos"
+              ]
+            },
+            "description": "Aviso que llega de Service a través del Orchestrator (rol SISTEMA).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"solicitudId\": {{solicitudA}},\n  \"trabajadorId\": {{trabajadorId}},\n  \"contratanteId\": {{contratanteId}},\n  \"fechaCumplida\": \"2026-10-20T15:00:00\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Ids nuevos en cada ejecución, para que la prueba se pueda repetir sin chocar con datos anteriores.",
+                  "const base = Math.floor(Math.random() * 1000000000);",
+                  "pm.collectionVariables.set('trabajadorId', base + 1);",
+                  "pm.collectionVariables.set('contratanteId', base + 2);",
+                  "pm.collectionVariables.set('solicitudA', base + 3);",
+                  "pm.collectionVariables.set('solicitudB', base + 4);",
+                  "pm.collectionVariables.set('solicitudCancelada', base + 5);",
+                  "pm.collectionVariables.set('hoy', new Date().toISOString().substring(0, 10));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Evento · Service avisa servicio cumplido (B)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_sistema}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{reputationUrl}}/api/v1/reputation/eventos/servicios-cumplidos",
+              "host": [
+                "{{reputationUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "reputation",
+                "eventos",
+                "servicios-cumplidos"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"solicitudId\": {{solicitudB}},\n  \"trabajadorId\": {{trabajadorId}},\n  \"contratanteId\": {{contratanteId}},\n  \"fechaCumplida\": \"2026-10-20T15:00:00\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "RF-01/07 · Contratante califica al trabajador (5)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_contratante}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{reputationUrl}}/api/v1/reputation/resenas",
+              "host": [
+                "{{reputationUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "reputation",
+                "resenas"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"solicitudId\": {{solicitudA}},\n  \"puntuacion\": 5,\n  \"comentario\": \"Excelente trabajo\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 201', () => pm.response.to.have.status(201));",
+                  "const b = pm.response.json();",
+                  "pm.test('Asociada al servicio y con código único', () => { pm.expect(b.solicitudId).to.eql(Number(pm.collectionVariables.get('solicitudA'))); pm.expect(b.codigo).to.be.a('string'); });",
+                  "pm.collectionVariables.set('codigoResena', b.codigo);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "RF-01 · Trabajador califica al contratante (4)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_trabajador}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{reputationUrl}}/api/v1/reputation/resenas",
+              "host": [
+                "{{reputationUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "reputation",
+                "resenas"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"solicitudId\": {{solicitudA}},\n  \"puntuacion\": 4\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 201', () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Regla · Calificar dos veces el mismo servicio → 409",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_contratante}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{reputationUrl}}/api/v1/reputation/resenas",
+              "host": [
+                "{{reputationUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "reputation",
+                "resenas"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"solicitudId\": {{solicitudA}},\n  \"puntuacion\": 1\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 409', () => pm.response.to.have.status(409));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "RF-01 · Contratante califica el servicio B (2)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_contratante}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{reputationUrl}}/api/v1/reputation/resenas",
+              "host": [
+                "{{reputationUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "reputation",
+                "resenas"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"solicitudId\": {{solicitudB}},\n  \"puntuacion\": 2,\n  \"comentario\": \"Llegó tarde\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 201', () => pm.response.to.have.status(201));",
+                  "pm.collectionVariables.set('codigoResenaBaja', pm.response.json().codigo);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "RF-02 · Promedio recalculado",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_contratante}}"
+              }
+            ],
+            "url": {
+              "raw": "{{reputationUrl}}/api/v1/reputation/trabajadores/{{trabajadorId}}",
+              "host": [
+                "{{reputationUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "reputation",
+                "trabajadores",
+                "{{trabajadorId}}"
+              ]
+            },
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));",
+                  "const b = pm.response.json();",
+                  "pm.test('Promedio 3,5 con 2 reseñas', () => { pm.expect(b.promedioCalificaciones).to.eql(3.5); pm.expect(b.totalResenas).to.eql(2); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "RF-03 · Reseñas del perfil (solo lectura)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_contratante}}"
+              }
+            ],
+            "url": {
+              "raw": "{{reputationUrl}}/api/v1/reputation/trabajadores/{{trabajadorId}}/resenas",
+              "host": [
+                "{{reputationUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "reputation",
+                "trabajadores",
+                "{{trabajadorId}}",
+                "resenas"
+              ]
+            },
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Dos reseñas', () => pm.expect(pm.response.json().length).to.eql(2));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "RNF-04 · Reseña por su código",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_contratante}}"
+              }
+            ],
+            "url": {
+              "raw": "{{reputationUrl}}/api/v1/reputation/resenas/{{codigoResena}}",
+              "host": [
+                "{{reputationUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "reputation",
+                "resenas",
+                "{{codigoResena}}"
+              ]
+            },
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Search · Reputación de varios trabajadores",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_contratante}}"
+              }
+            ],
+            "url": {
+              "raw": "{{reputationUrl}}/api/v1/reputation/reputaciones?trabajadorIds={{trabajadorId}}",
+              "host": [
+                "{{reputationUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "reputation",
+                "reputaciones"
+              ],
+              "query": [
+                {
+                  "key": "trabajadorIds",
+                  "value": "{{trabajadorId}}"
+                }
+              ]
+            },
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Un resultado', () => pm.expect(pm.response.json().length).to.eql(1));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "RF-04 · Trabajador reporta la reseña baja",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_trabajador}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{reputationUrl}}/api/v1/reputation/resenas/{{codigoResenaBaja}}/reportes",
+              "host": [
+                "{{reputationUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "reputation",
+                "resenas",
+                "{{codigoResenaBaja}}",
+                "reportes"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"motivo\": \"FALSA\",\n  \"descripcion\": \"El servicio se hizo a tiempo y el cliente quedó conforme; la reseña no es verdadera.\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 201', () => pm.response.to.have.status(201));",
+                  "pm.test('Queda pendiente', () => pm.expect(pm.response.json().estado).to.eql('PENDIENTE'));",
+                  "pm.collectionVariables.set('reporteId', pm.response.json().id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Moderación · Administrador lista los pendientes",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_admin}}"
+              }
+            ],
+            "url": {
+              "raw": "{{reputationUrl}}/api/v1/reputation/reportes?estado=PENDIENTE",
+              "host": [
+                "{{reputationUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "reputation",
+                "reportes"
+              ],
+              "query": [
+                {
+                  "key": "estado",
+                  "value": "PENDIENTE"
+                }
+              ]
+            },
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Incluye el reporte', () => pm.expect(pm.response.json().map(r => r.id)).to.include(Number(pm.collectionVariables.get('reporteId'))));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Moderación · Administrador retira la reseña",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_admin}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{reputationUrl}}/api/v1/reputation/reportes/{{reporteId}}/resolucion",
+              "host": [
+                "{{reputationUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "reputation",
+                "reportes",
+                "{{reporteId}}",
+                "resolucion"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"resultado\": \"RESENA_RETIRADA\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Resuelto y registrado', () => { const b = pm.response.json(); pm.expect(b.estado).to.eql('RESUELTO'); pm.expect(b.moderadorId).to.eql(1); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "RF-02 · El promedio se recalcula sin la reseña retirada",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_contratante}}"
+              }
+            ],
+            "url": {
+              "raw": "{{reputationUrl}}/api/v1/reputation/trabajadores/{{trabajadorId}}",
+              "host": [
+                "{{reputationUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "reputation",
+                "trabajadores",
+                "{{trabajadorId}}"
+              ]
+            },
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Promedio 5 con 1 reseña', () => { const b = pm.response.json(); pm.expect(b.promedioCalificaciones).to.eql(5); pm.expect(b.totalResenas).to.eql(1); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "RF-06 · Cancelación tardía: −0,5",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_sistema}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{reputationUrl}}/api/v1/reputation/eventos/cancelaciones-tardias",
+              "host": [
+                "{{reputationUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "reputation",
+                "eventos",
+                "cancelaciones-tardias"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"solicitudId\": {{solicitudCancelada}},\n  \"trabajadorId\": {{trabajadorId}},\n  \"fechaHoraServicio\": \"2026-11-05T10:00:00\",\n  \"fechaCancelacion\": \"2026-11-05T08:00:00\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Penalización aplicada', () => { const b = pm.response.json(); pm.expect(b.aplicada).to.be.true; pm.expect(b.reputacion.reputacion).to.eql(4.5); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Reporting · Estadísticas de hoy",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_admin}}"
+              }
+            ],
+            "url": {
+              "raw": "{{reputationUrl}}/api/v1/reputation/estadisticas?desde={{hoy}}&hasta={{hoy}}",
+              "host": [
+                "{{reputationUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "reputation",
+                "estadisticas"
+              ],
+              "query": [
+                {
+                  "key": "desde",
+                  "value": "{{hoy}}"
+                },
+                {
+                  "key": "hasta",
+                  "value": "{{hoy}}"
+                }
+              ]
+            },
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Cuenta reseñas y reportes', () => { const b = pm.response.json(); pm.expect(b.totalResenas).to.be.above(0); pm.expect(b.resenasReportadas).to.be.above(0); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Seguridad · Contratante no puede moderar → 403",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_contratante}}"
+              }
+            ],
+            "url": {
+              "raw": "{{reputationUrl}}/api/v1/reputation/reportes",
+              "host": [
+                "{{reputationUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "reputation",
+                "reportes"
+              ]
+            },
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Seguridad · Sin JWT → 401",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{reputationUrl}}/api/v1/reputation/trabajadores/1",
+              "host": [
+                "{{reputationUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "reputation",
+                "trabajadores",
+                "1"
+              ]
+            },
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 401', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Documentación (Swagger)",
+      "item": [
+        {
+          "name": "Swagger · Reputation",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{reputationUrl}}/v3/api-docs",
+              "host": [
+                "{{reputationUrl}}"
+              ],
+              "path": [
+                "v3",
+                "api-docs"
+              ]
+            },
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Documenta el JWT', () => pm.expect(pm.response.json().components.securitySchemes).to.have.property('bearer-jwt'));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

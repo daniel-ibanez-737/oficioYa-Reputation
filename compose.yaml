@@ -1,0 +1,9 @@
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: oficioya_reputation
+      POSTGRES_USER: oficioya
+      POSTGRES_PASSWORD: oficioya
+    ports:
+      - "5432:5432"
