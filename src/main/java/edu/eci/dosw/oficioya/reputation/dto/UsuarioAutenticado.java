@@ -1,5 +1,7 @@
 package edu.eci.dosw.oficioya.reputation.dto;
 
+import java.util.UUID;
+
 import java.util.EnumSet;
 import java.util.Set;
 
@@ -11,19 +13,19 @@ import edu.eci.dosw.oficioya.reputation.exception.OperacionNoPermitidaException;
 
 /**
  * Usuario que hace la petición, tomado del JWT.
- * SUPUESTO (pendiente con Identity, Squad 1): el claim {@code sub} es el id numérico del usuario.
+ * Como en Identity (Squad 1), el claim {@code sub} es el UUID del usuario.
  */
-public record UsuarioAutenticado(Integer id, Set<TipoParte> roles, boolean administrador) {
+public record UsuarioAutenticado(UUID id, Set<TipoParte> roles, boolean administrador) {
 
     public static final String ROL_TRABAJADOR = "ROLE_TRABAJADOR";
     public static final String ROL_CONTRATANTE = "ROLE_CONTRATANTE";
-    public static final String ROL_ADMINISTRADOR = "ROLE_ADMINISTRADOR";
+    public static final String ROL_ADMINISTRADOR = "ROLE_ADMIN";
 
     public static UsuarioAutenticado desde(JwtAuthenticationToken token) {
-        Integer id;
+        UUID id;
         try {
-            id = Integer.valueOf(token.getToken().getSubject());
-        } catch (NumberFormatException e) {
+            id = UUID.fromString(token.getToken().getSubject());
+        } catch (IllegalArgumentException | NullPointerException e) {
             throw new OperacionNoPermitidaException("El token no identifica a un usuario válido");
         }
         Set<TipoParte> roles = EnumSet.noneOf(TipoParte.class);

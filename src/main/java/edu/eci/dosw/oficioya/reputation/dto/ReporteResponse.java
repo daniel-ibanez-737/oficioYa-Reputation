@@ -11,12 +11,12 @@ import edu.eci.dosw.oficioya.reputation.domain.ResultadoModeracion;
 public record ReporteResponse(
         Integer id,
         UUID codigoResena,
-        Integer reportanteId,
+        UUID reportanteId,
         MotivoReporte motivo,
         String descripcion,
         EstadoReporte estado,
         LocalDateTime fechaReporte,
-        Integer moderadorId,
+        UUID moderadorId,
         ResultadoModeracion resultado,
         LocalDateTime fechaResolucion) {
 

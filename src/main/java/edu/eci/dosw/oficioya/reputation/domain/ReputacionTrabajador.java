@@ -1,5 +1,7 @@
 package edu.eci.dosw.oficioya.reputation.domain;
 
+import java.util.UUID;
+
 import java.time.LocalDateTime;
 
 import org.hibernate.annotations.JdbcTypeCode;
@@ -23,7 +25,7 @@ import jakarta.persistence.Table;
 public class ReputacionTrabajador extends Reputacion {
 
     @Column(name = "trabajador_id", nullable = false, unique = true)
-    private Integer trabajadorId;
+    private UUID trabajadorId;
 
     @Column(name = "penalizacion_acumulada", nullable = false)
     private double penalizacionAcumulada;
@@ -40,7 +42,7 @@ public class ReputacionTrabajador extends Reputacion {
         // requerido por JPA
     }
 
-    public ReputacionTrabajador(Integer trabajadorId) {
+    public ReputacionTrabajador(UUID trabajadorId) {
         this.trabajadorId = trabajadorId;
         this.estado = EstadoTrabajador.ACTIVO;
     }
@@ -79,7 +81,7 @@ public class ReputacionTrabajador extends Reputacion {
         return estado == EstadoTrabajador.PAUSADO;
     }
 
-    public Integer getTrabajadorId() {
+    public UUID getTrabajadorId() {
         return trabajadorId;
     }
 

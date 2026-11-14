@@ -58,7 +58,7 @@ public class ResenaController {
 
     @Operation(summary = "Reseñas visibles del perfil de un trabajador")
     @GetMapping("/trabajadores/{trabajadorId}/resenas")
-    public List<ResenaResponse> resenasDeTrabajador(@PathVariable Integer trabajadorId) {
+    public List<ResenaResponse> resenasDeTrabajador(@PathVariable UUID trabajadorId) {
         return resenaService.resenasDeTrabajador(trabajadorId);
     }
 

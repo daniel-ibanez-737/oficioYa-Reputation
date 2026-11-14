@@ -11,10 +11,10 @@ import edu.eci.dosw.oficioya.reputation.domain.TipoParte;
  */
 public record ResenaResponse(
         UUID codigo,
-        Integer solicitudId,
+        UUID solicitudId,
         TipoParte tipoAutor,
         TipoParte tipoCalificado,
-        Integer calificadoId,
+        UUID calificadoId,
         int puntuacion,
         String comentario,
         LocalDateTime fechaCreacion) {

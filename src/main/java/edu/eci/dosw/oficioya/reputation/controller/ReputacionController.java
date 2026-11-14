@@ -1,5 +1,7 @@
 package edu.eci.dosw.oficioya.reputation.controller;
 
+import java.util.UUID;
+
 import java.util.List;
 
 import org.springframework.web.bind.annotation.GetMapping;
@@ -32,20 +34,20 @@ public class ReputacionController {
 
     @Operation(summary = "Reputación de un trabajador")
     @GetMapping("/trabajadores/{trabajadorId}")
-    public ReputacionTrabajadorResponse trabajador(@PathVariable Integer trabajadorId) {
+    public ReputacionTrabajadorResponse trabajador(@PathVariable UUID trabajadorId) {
         return reputacionService.consultarTrabajador(trabajadorId);
     }
 
     @Operation(summary = "Reputación de un contratante")
     @GetMapping("/contratantes/{contratanteId}")
-    public ReputacionContratanteResponse contratante(@PathVariable Integer contratanteId) {
+    public ReputacionContratanteResponse contratante(@PathVariable UUID contratanteId) {
         return reputacionService.consultarContratante(contratanteId);
     }
 
     /** Usado por Search (vía Orchestrator) para ordenar sus resultados. */
     @Operation(summary = "Reputación de varios trabajadores (para Search)")
     @GetMapping("/reputaciones")
-    public List<ReputacionResumenResponse> resumen(@RequestParam(required = false) List<Integer> trabajadorIds) {
+    public List<ReputacionResumenResponse> resumen(@RequestParam(required = false) List<UUID> trabajadorIds) {
         return reputacionService.consultarResumen(trabajadorIds);
     }
 }

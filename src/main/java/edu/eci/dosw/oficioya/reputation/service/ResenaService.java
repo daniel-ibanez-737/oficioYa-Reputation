@@ -88,7 +88,7 @@ public class ResenaService {
 
     /** RF-03: reseñas visibles del perfil de un trabajador, de la más reciente a la más antigua. */
     @Transactional(readOnly = true)
-    public List<ResenaResponse> resenasDeTrabajador(Integer trabajadorId) {
+    public List<ResenaResponse> resenasDeTrabajador(UUID trabajadorId) {
         return reputacionTrabajadorRepository.findByTrabajadorId(trabajadorId)
                 .map(r -> resenaRepository.findByReputacionIdAndVisibleTrueOrderByFechaCreacionDescIdDesc(r.getId())
                         .stream().map(ResenaResponse::desde).toList())

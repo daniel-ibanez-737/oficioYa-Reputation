@@ -1,5 +1,9 @@
 package edu.eci.dosw.oficioya.reputation;
 
+import java.util.UUID;
+
+import static edu.eci.dosw.oficioya.reputation.IdsDePrueba.id;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.hasItem;
@@ -58,8 +62,8 @@ class AceptacionReputationTest {
     @MockitoBean
     private OrquestadorClient orquestador;
 
-    private int trabajador;
-    private int contratante;
+    private UUID trabajador;
+    private UUID contratante;
 
     @BeforeEach
     void preparar() {
@@ -70,40 +74,40 @@ class AceptacionReputationTest {
 
     // ---------- utilidades ----------
 
-    private static int nuevoId() {
-        return SECUENCIA.incrementAndGet();
+    private static UUID nuevoId() {
+        return id(SECUENCIA.incrementAndGet());
     }
 
-    private static RequestPostProcessor usuario(int id, String rol) {
-        return jwt().jwt(j -> j.subject(String.valueOf(id))).authorities(new SimpleGrantedAuthority(rol));
+    private static RequestPostProcessor usuario(UUID id, String rol) {
+        return jwt().jwt(j -> j.subject(id.toString())).authorities(new SimpleGrantedAuthority(rol));
     }
 
     private static RequestPostProcessor sistema() {
-        return usuario(1, "ROLE_SISTEMA");
+        return usuario(id(1), "ROLE_SISTEMA");
     }
 
     private static RequestPostProcessor administrador() {
-        return usuario(2, "ROLE_ADMINISTRADOR");
+        return usuario(id(2), "ROLE_ADMIN");
     }
 
-    private ResultActions servicioCumplido(int solicitud, int trabajadorId, int contratanteId) throws Exception {
+    private ResultActions servicioCumplido(UUID solicitud, UUID trabajadorId, UUID contratanteId) throws Exception {
         return mvc.perform(post(BASE + "/eventos/servicios-cumplidos").with(sistema())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
-                        {"solicitudId": %d, "trabajadorId": %d, "contratanteId": %d,
+                        {"solicitudId": "%s", "trabajadorId": "%s", "contratanteId": "%s",
                          "fechaCumplida": "2026-10-20T15:00:00"}""".formatted(solicitud, trabajadorId, contratanteId)));
     }
 
-    private ResultActions calificar(int autorId, String rol, int solicitud, int puntuacion) throws Exception {
+    private ResultActions calificar(UUID autorId, String rol, UUID solicitud, int puntuacion) throws Exception {
         return mvc.perform(post(BASE + "/resenas").with(usuario(autorId, rol))
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("{\"solicitudId\": %d, \"puntuacion\": %d, \"comentario\": \"Comentario %d\"}"
+                .content("{\"solicitudId\": \"%s\", \"puntuacion\": %d, \"comentario\": \"Comentario %d\"}"
                         .formatted(solicitud, puntuacion, puntuacion)));
     }
 
     /** Crea un servicio cumplido y el contratante califica al trabajador; devuelve el código de la reseña. */
     private String contratanteCalifica(int puntuacion) throws Exception {
-        int solicitud = nuevoId();
+        UUID solicitud = nuevoId();
         servicioCumplido(solicitud, trabajador, contratante).andExpect(status().isOk());
         String json = calificar(contratante, "ROLE_CONTRATANTE", solicitud, puntuacion)
                 .andExpect(status().isCreated())
@@ -114,11 +118,11 @@ class AceptacionReputationTest {
     private static final String DESCRIPCION =
             "Nunca contraté este servicio, la reseña es de una persona que no fue mi cliente.";
 
-    private ResultActions reportar(String codigo, int reportanteId) throws Exception {
+    private ResultActions reportar(String codigo, UUID reportanteId) throws Exception {
         return reportar(codigo, reportanteId, "{\"motivo\": \"FALSA\", \"descripcion\": \"" + DESCRIPCION + "\"}");
     }
 
-    private ResultActions reportar(String codigo, int reportanteId, String cuerpo) throws Exception {
+    private ResultActions reportar(String codigo, UUID reportanteId, String cuerpo) throws Exception {
         return mvc.perform(post(BASE + "/resenas/" + codigo + "/reportes").with(usuario(reportanteId, "ROLE_TRABAJADOR"))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(cuerpo));
@@ -138,16 +142,16 @@ class AceptacionReputationTest {
 
     @Test
     void ambasPartesSeCalificanYLaResenaQuedaAsociadaAlServicio() throws Exception {
-        int solicitud = nuevoId();
+        UUID solicitud = nuevoId();
         servicioCumplido(solicitud, trabajador, contratante)
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.solicitudId").value(solicitud));
+                .andExpect(jsonPath("$.solicitudId").value(solicitud.toString()));
 
         String json = calificar(contratante, "ROLE_CONTRATANTE", solicitud, 5)
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.solicitudId").value(solicitud))
+                .andExpect(jsonPath("$.solicitudId").value(solicitud.toString()))
                 .andExpect(jsonPath("$.tipoAutor").value("CONTRATANTE"))
-                .andExpect(jsonPath("$.calificadoId").value(trabajador))
+                .andExpect(jsonPath("$.calificadoId").value(trabajador.toString()))
                 .andExpect(jsonPath("$.codigo").isNotEmpty())
                 .andReturn().getResponse().getContentAsString();
         calificar(trabajador, "ROLE_TRABAJADOR", solicitud, 4)
@@ -157,7 +161,7 @@ class AceptacionReputationTest {
         String codigo = JsonPath.read(json, "$.codigo");
         mvc.perform(get(BASE + "/resenas/" + codigo).with(usuario(contratante, "ROLE_CONTRATANTE")))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.solicitudId").value(solicitud));
+                .andExpect(jsonPath("$.solicitudId").value(solicitud.toString()));
         mvc.perform(get(BASE + "/contratantes/" + contratante).with(usuario(trabajador, "ROLE_TRABAJADOR")))
                 .andExpect(jsonPath("$.promedioCalificaciones").value(4.0))
                 .andExpect(jsonPath("$.totalResenas").value(1));
@@ -165,16 +169,16 @@ class AceptacionReputationTest {
 
     @Test
     void elAvisoDeServicioCumplidoEsIdempotente() throws Exception {
-        int solicitud = nuevoId();
+        UUID solicitud = nuevoId();
         servicioCumplido(solicitud, trabajador, contratante).andExpect(status().isOk());
         servicioCumplido(solicitud, trabajador, contratante)
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.trabajadorId").value(trabajador));
+                .andExpect(jsonPath("$.trabajadorId").value(trabajador.toString()));
     }
 
     @Test
     void reglasDeLaCalificacion() throws Exception {
-        int solicitud = nuevoId();
+        UUID solicitud = nuevoId();
         // servicio que aún no está Cumplido
         calificar(contratante, "ROLE_CONTRATANTE", solicitud, 5).andExpect(status().isConflict());
 
@@ -230,12 +234,12 @@ class AceptacionReputationTest {
     @Test
     void searchConsultaLaReputacionDeVariosTrabajadores() throws Exception {
         contratanteCalifica(5);
-        int otro = nuevoId();
+        UUID otro = nuevoId();
         mvc.perform(get(BASE + "/reputaciones").param("trabajadorIds", String.valueOf(trabajador), String.valueOf(otro))
                         .with(usuario(contratante, "ROLE_CONTRATANTE")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(1))
-                .andExpect(jsonPath("$[0].trabajadorId").value(trabajador))
+                .andExpect(jsonPath("$[0].trabajadorId").value(trabajador.toString()))
                 .andExpect(jsonPath("$[0].reputacion").value(5.0));
         mvc.perform(get(BASE + "/reputaciones").with(usuario(contratante, "ROLE_CONTRATANTE")))
                 .andExpect(jsonPath("$.length()").value(0));
@@ -272,18 +276,18 @@ class AceptacionReputationTest {
 
     // ---------- RF-06: penalización por cancelación tardía ----------
 
-    private ResultActions cancelacion(int solicitud, String fechaCancelacion) throws Exception {
+    private ResultActions cancelacion(UUID solicitud, String fechaCancelacion) throws Exception {
         return mvc.perform(post(BASE + "/eventos/cancelaciones-tardias").with(sistema())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
-                        {"solicitudId": %d, "trabajadorId": %d, "fechaHoraServicio": "2026-11-05T10:00:00",
+                        {"solicitudId": "%s", "trabajadorId": "%s", "fechaHoraServicio": "2026-11-05T10:00:00",
                          "fechaCancelacion": "%s"}""".formatted(solicitud, trabajador, fechaCancelacion)));
     }
 
     @Test
     void cancelarConMenosDeVeinticuatroHorasDescuentaMedioPuntoUnaSolaVez() throws Exception {
         contratanteCalifica(5);
-        int solicitud = nuevoId();
+        UUID solicitud = nuevoId();
 
         cancelacion(solicitud, "2026-11-05T02:00:00")
                 .andExpect(status().isOk())
@@ -326,7 +330,7 @@ class AceptacionReputationTest {
         resolver(reporte, "RESENA_MANTENIDA")
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.estado").value("RESUELTO"))
-                .andExpect(jsonPath("$.moderadorId").value(2))
+                .andExpect(jsonPath("$.moderadorId").value(id(2).toString()))
                 .andExpect(jsonPath("$.fechaResolucion").isNotEmpty());
         resolver(reporte, "RESENA_RETIRADA").andExpect(status().isConflict());
 
@@ -359,13 +363,13 @@ class AceptacionReputationTest {
 
         ArgumentCaptor<AvisoReporteResenaDTO> correo = ArgumentCaptor.forClass(AvisoReporteResenaDTO.class);
         verify(orquestador).enviarCorreoReporteResena(correo.capture());
-        assertThat(correo.getValue().destinatario()).isEqualTo("admin@oficioya.com");
-        assertThat(correo.getValue().reporteId()).isEqualTo(reporte);
-        assertThat(correo.getValue().codigoResena()).hasToString(codigo);
-        assertThat(correo.getValue().calificadoId()).isEqualTo(trabajador);
-        assertThat(correo.getValue().puntuacion()).isEqualTo(1);
-        assertThat(correo.getValue().descripcion()).isEqualTo(DESCRIPCION);
-        assertThat(correo.getValue().asunto()).contains("FALSA");
+        assertThat(correo.getValue().receiverId()).hasToString("00000000-0000-0000-0000-000000000900");
+        assertThat(correo.getValue().title()).contains("FALSA");
+        assertThat(correo.getValue().description()).contains("Reporte " + reporte, codigo, trabajador.toString(),
+                "puntuación 1", DESCRIPCION);
+        assertThat(correo.getValue().type()).isNull();
+        assertThat(correo.getValue().requestId()).isNotNull();
+        assertThat(correo.getValue().dateCreated()).isNotNull();
     }
 
     @Test
@@ -471,12 +475,12 @@ class AceptacionReputationTest {
         mvc.perform(get(BASE + "/estadisticas").with(usuario(contratante, "ROLE_CONTRATANTE")))
                 .andExpect(status().isForbidden());
         // Un administrador no califica servicios.
-        calificar(2, "ROLE_ADMINISTRADOR", nuevoId(), 5).andExpect(status().isForbidden());
-        // El token debe identificar a un usuario numérico.
-        mvc.perform(post(BASE + "/resenas").with(jwt().jwt(j -> j.subject("no-numerico"))
+        calificar(id(2), "ROLE_ADMIN", nuevoId(), 5).andExpect(status().isForbidden());
+        // El token debe identificar al usuario con un UUID, como lo emite Identity.
+        mvc.perform(post(BASE + "/resenas").with(jwt().jwt(j -> j.subject("no-es-uuid"))
                                 .authorities(new SimpleGrantedAuthority("ROLE_CONTRATANTE")))
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"solicitudId\": 1, \"puntuacion\": 5}"))
+                        .content("{\"solicitudId\": \"%s\", \"puntuacion\": 5}".formatted(id(1))))
                 .andExpect(status().isForbidden());
     }
 }

@@ -1,5 +1,7 @@
 package edu.eci.dosw.oficioya.reputation.domain;
 
+import java.util.UUID;
+
 import java.time.LocalDateTime;
 
 import jakarta.persistence.Column;
@@ -31,7 +33,7 @@ public class Penalizacion {
     private ReputacionTrabajador reputacionTrabajador;
 
     @Column(name = "solicitud_id", nullable = false, unique = true)
-    private Integer solicitudId;
+    private UUID solicitudId;
 
     @Column(name = "puntos", nullable = false)
     private double puntos;
@@ -53,7 +55,7 @@ public class Penalizacion {
     }
 
     @SuppressWarnings("java:S107")
-    public Penalizacion(ReputacionTrabajador reputacionTrabajador, Integer solicitudId, double puntos,
+    public Penalizacion(ReputacionTrabajador reputacionTrabajador, UUID solicitudId, double puntos,
                         LocalDateTime fechaHoraServicio, LocalDateTime fechaCancelacion,
                         LocalDateTime fechaAplicacion) {
         this.reputacionTrabajador = reputacionTrabajador;
@@ -69,7 +71,7 @@ public class Penalizacion {
         return id;
     }
 
-    public Integer getSolicitudId() {
+    public UUID getSolicitudId() {
         return solicitudId;
     }
 

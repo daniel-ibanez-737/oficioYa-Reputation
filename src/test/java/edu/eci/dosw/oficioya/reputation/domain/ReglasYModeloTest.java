@@ -1,5 +1,9 @@
 package edu.eci.dosw.oficioya.reputation.domain;
 
+import java.util.UUID;
+
+import static edu.eci.dosw.oficioya.reputation.IdsDePrueba.id;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -48,17 +52,17 @@ class ReglasYModeloTest {
 
     // ---------- Servicio calificable ----------
 
-    private final ServicioCalificable servicio = new ServicioCalificable(1, 10, 20, AHORA);
+    private final ServicioCalificable servicio = new ServicioCalificable(id(1), id(10), id(20), AHORA);
 
     @Test
     void identificaLaParteSegunIdYRol() {
-        assertThat(servicio.parteDe(10, Set.of(TipoParte.TRABAJADOR))).isEqualTo(TipoParte.TRABAJADOR);
-        assertThat(servicio.parteDe(20, Set.of(TipoParte.CONTRATANTE))).isEqualTo(TipoParte.CONTRATANTE);
+        assertThat(servicio.parteDe(id(10), Set.of(TipoParte.TRABAJADOR))).isEqualTo(TipoParte.TRABAJADOR);
+        assertThat(servicio.parteDe(id(20), Set.of(TipoParte.CONTRATANTE))).isEqualTo(TipoParte.CONTRATANTE);
         Set<TipoParte> soloContratante = Set.of(TipoParte.CONTRATANTE);
-        assertThatThrownBy(() -> servicio.parteDe(10, soloContratante))
+        assertThatThrownBy(() -> servicio.parteDe(id(10), soloContratante))
                 .isInstanceOf(OperacionNoPermitidaException.class);
         Set<TipoParte> ambos = Set.of(TipoParte.TRABAJADOR, TipoParte.CONTRATANTE);
-        assertThatThrownBy(() -> servicio.parteDe(99, ambos)).isInstanceOf(OperacionNoPermitidaException.class);
+        assertThatThrownBy(() -> servicio.parteDe(id(99), ambos)).isInstanceOf(OperacionNoPermitidaException.class);
     }
 
     @Test
@@ -76,9 +80,9 @@ class ReglasYModeloTest {
 
     @Test
     void laResenaApuntaALaContraparteYValidaLaPuntuacion() {
-        ReputacionTrabajador reputacion = new ReputacionTrabajador(10);
-        Resena resena = new Resena(servicio, reputacion, 20, TipoParte.CONTRATANTE, 5, "  Excelente  ", AHORA);
-        assertThat(resena.getCalificadoId()).isEqualTo(10);
+        ReputacionTrabajador reputacion = new ReputacionTrabajador(id(10));
+        Resena resena = new Resena(servicio, reputacion, id(20), TipoParte.CONTRATANTE, 5, "  Excelente  ", AHORA);
+        assertThat(resena.getCalificadoId()).isEqualTo(id(10));
         assertThat(resena.getTipoCalificado()).isEqualTo(TipoParte.TRABAJADOR);
         assertThat(resena.getComentario()).isEqualTo("Excelente");
         assertThat(resena.getCodigo()).isNotNull();
@@ -86,12 +90,12 @@ class ReglasYModeloTest {
         resena.retirar();
         assertThat(resena.isVisible()).isFalse();
 
-        assertThat(new Resena(servicio, reputacion, 20, TipoParte.CONTRATANTE, 3, " ", AHORA).getComentario()).isNull();
-        assertThatThrownBy(() -> new Resena(servicio, reputacion, 20, TipoParte.CONTRATANTE, 0, null, AHORA))
+        assertThat(new Resena(servicio, reputacion, id(20), TipoParte.CONTRATANTE, 3, " ", AHORA).getComentario()).isNull();
+        assertThatThrownBy(() -> new Resena(servicio, reputacion, id(20), TipoParte.CONTRATANTE, 0, null, AHORA))
                 .isInstanceOf(SolicitudInvalidaException.class);
-        assertThatThrownBy(() -> new Resena(servicio, reputacion, 20, TipoParte.CONTRATANTE, 6, null, AHORA))
+        assertThatThrownBy(() -> new Resena(servicio, reputacion, id(20), TipoParte.CONTRATANTE, 6, null, AHORA))
                 .isInstanceOf(SolicitudInvalidaException.class);
-        assertThatThrownBy(() -> new Resena(servicio, reputacion, 10, TipoParte.TRABAJADOR, 4, null, AHORA))
+        assertThatThrownBy(() -> new Resena(servicio, reputacion, id(10), TipoParte.TRABAJADOR, 4, null, AHORA))
                 .isInstanceOf(IllegalArgumentException.class);
     }
 
@@ -99,7 +103,7 @@ class ReglasYModeloTest {
 
     @Test
     void reputacionDelTrabajadorDescuentaPenalizacionesSinBajarDeCero() {
-        ReputacionTrabajador trabajador = new ReputacionTrabajador(10);
+        ReputacionTrabajador trabajador = new ReputacionTrabajador(id(10));
         trabajador.recalcular(List.of(5, 4), AHORA);
         assertThat(trabajador.getPromedioCalificaciones()).isEqualTo(4.5);
         trabajador.penalizar(0.5, AHORA);
@@ -111,7 +115,7 @@ class ReglasYModeloTest {
 
     @Test
     void pausarEsIdempotente() {
-        ReputacionTrabajador trabajador = new ReputacionTrabajador(10);
+        ReputacionTrabajador trabajador = new ReputacionTrabajador(id(10));
         assertThat(trabajador.getEstado()).isEqualTo(EstadoTrabajador.ACTIVO);
         assertThat(trabajador.pausar(AHORA)).isTrue();
         assertThat(trabajador.getEstado()).isEqualTo(EstadoTrabajador.PAUSADO);
@@ -121,7 +125,7 @@ class ReglasYModeloTest {
 
     @Test
     void reputacionDelContratanteEsSuPromedio() {
-        ReputacionContratante contratante = new ReputacionContratante(20);
+        ReputacionContratante contratante = new ReputacionContratante(id(20));
         contratante.recalcular(List.of(4, 3), AHORA);
         assertThat(contratante.valorReputacion()).isEqualTo(3.5);
         assertThat(contratante.getTipo()).isEqualTo(TipoParte.CONTRATANTE);
@@ -132,14 +136,14 @@ class ReglasYModeloTest {
 
     @Test
     void unReporteSeResuelveUnaSolaVez() {
-        Resena resena = new Resena(servicio, new ReputacionTrabajador(10), 20, TipoParte.CONTRATANTE, 1, null, AHORA);
-        ReporteResena reporte = new ReporteResena(resena, 10, MotivoReporte.FALSA, " ", AHORA);
+        Resena resena = new Resena(servicio, new ReputacionTrabajador(id(10)), id(20), TipoParte.CONTRATANTE, 1, null, AHORA);
+        ReporteResena reporte = new ReporteResena(resena, id(10), MotivoReporte.FALSA, " ", AHORA);
         assertThat(reporte.getEstado()).isEqualTo(EstadoReporte.PENDIENTE);
         assertThat(reporte.getDescripcion()).isNull();
-        reporte.resolver(1, ResultadoModeracion.RESENA_MANTENIDA, AHORA);
+        reporte.resolver(id(1), ResultadoModeracion.RESENA_MANTENIDA, AHORA);
         assertThat(reporte.estaResuelto()).isTrue();
-        assertThat(reporte.getModeradorId()).isEqualTo(1);
-        assertThatThrownBy(() -> reporte.resolver(1, ResultadoModeracion.RESENA_RETIRADA, AHORA))
+        assertThat(reporte.getModeradorId()).isEqualTo(id(1));
+        assertThatThrownBy(() -> reporte.resolver(id(1), ResultadoModeracion.RESENA_RETIRADA, AHORA))
                 .isInstanceOf(ConflictoException.class);
     }
 }
