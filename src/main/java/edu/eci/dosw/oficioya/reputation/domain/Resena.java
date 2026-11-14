@@ -48,7 +48,7 @@ public class Resena {
     private Reputacion reputacion;
 
     @Column(name = "autor_id", nullable = false)
-    private Integer autorId;
+    private UUID autorId;
 
     @Enumerated(EnumType.STRING)
     @JdbcTypeCode(SqlTypes.VARCHAR)
@@ -56,7 +56,7 @@ public class Resena {
     private TipoParte tipoAutor;
 
     @Column(name = "calificado_id", nullable = false)
-    private Integer calificadoId;
+    private UUID calificadoId;
 
     @Enumerated(EnumType.STRING)
     @JdbcTypeCode(SqlTypes.VARCHAR)
@@ -79,7 +79,7 @@ public class Resena {
         // requerido por JPA
     }
 
-    public Resena(ServicioCalificable servicio, Reputacion reputacion, Integer autorId, TipoParte tipoAutor,
+    public Resena(ServicioCalificable servicio, Reputacion reputacion, UUID autorId, TipoParte tipoAutor,
                   int puntuacion, String comentario, LocalDateTime fechaCreacion) {
         if (puntuacion < PUNTUACION_MINIMA || puntuacion > PUNTUACION_MAXIMA) {
             throw new SolicitudInvalidaException("La puntuación debe estar entre 1 y 5");
@@ -121,7 +121,7 @@ public class Resena {
         return reputacion;
     }
 
-    public Integer getAutorId() {
+    public UUID getAutorId() {
         return autorId;
     }
 
@@ -129,7 +129,7 @@ public class Resena {
         return tipoAutor;
     }
 
-    public Integer getCalificadoId() {
+    public UUID getCalificadoId() {
         return calificadoId;
     }
 

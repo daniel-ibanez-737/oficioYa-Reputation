@@ -10,7 +10,7 @@
       "script": {
         "type": "text/javascript",
         "exec": [
-          "// Genera JWT HS256 de desarrollo para cada rol (mismo secreto que application.yml).",
+          "// Genera JWT HS256 de desarrollo para cada rol, igual que Identity: secreto en Base64, roles sin prefijo y\n// sub UUID (mismo secreto que application.yml).",
           "// Así no hay que pegar tokens a mano. En producción los emite Identity (Squad 1).",
           "const cripto = require('crypto-js');",
           "function b64url(palabras) {",
@@ -20,13 +20,13 @@
           "    const ahora = Math.floor(Date.now() / 1000);",
           "    const cabecera = b64url(cripto.enc.Utf8.parse(JSON.stringify({ alg: 'HS256', typ: 'JWT' })));",
           "    const cuerpo = b64url(cripto.enc.Utf8.parse(JSON.stringify({ sub: String(sub), roles: [rol], iat: ahora, exp: ahora + 3600 })));",
-          "    const firma = b64url(cripto.HmacSHA256(cabecera + '.' + cuerpo, pm.collectionVariables.get('jwtSecret')));",
+          "    const firma = b64url(cripto.HmacSHA256(cabecera + '.' + cuerpo, cripto.enc.Base64.parse(pm.collectionVariables.get('jwtSecret'))));",
           "    return cabecera + '.' + cuerpo + '.' + firma;",
           "}",
-          "pm.collectionVariables.set('token_contratante', token(pm.collectionVariables.get('contratanteId'), 'ROLE_CONTRATANTE'));",
-          "pm.collectionVariables.set('token_trabajador', token(pm.collectionVariables.get('trabajadorId'), 'ROLE_TRABAJADOR'));",
-          "pm.collectionVariables.set('token_admin', token(1, 'ROLE_ADMINISTRADOR'));",
-          "pm.collectionVariables.set('token_sistema', token(0, 'ROLE_SISTEMA'));"
+          "pm.collectionVariables.set('token_contratante', token(pm.collectionVariables.get('contratanteId'), 'CONTRATANTE'));",
+          "pm.collectionVariables.set('token_trabajador', token(pm.collectionVariables.get('trabajadorId'), 'TRABAJADOR'));",
+          "pm.collectionVariables.set('token_admin', token('00000000-0000-0000-0000-000000000900', 'ADMIN'));",
+          "pm.collectionVariables.set('token_sistema', token('00000000-0000-0000-0000-000000000999', 'SISTEMA'));"
         ]
       }
     }
@@ -38,15 +38,15 @@
     },
     {
       "key": "jwtSecret",
-      "value": "cambiar-este-secreto-de-desarrollo-de-al-menos-32-bytes"
+      "value": "Y2FtYmlhci1lc3RlLXNlY3JldG8tZGUtZGVzYXJyb2xsby1kZS1hbC1tZW5vcy0zMi1ieXRlcw=="
     },
     {
       "key": "trabajadorId",
-      "value": "101"
+      "value": "00000000-0000-0000-0000-000000000101"
     },
     {
       "key": "contratanteId",
-      "value": "201"
+      "value": "00000000-0000-0000-0000-000000000201"
     }
   ],
   "item": [
@@ -83,7 +83,7 @@
             "description": "Aviso que llega de Service a través del Orchestrator (rol SISTEMA).",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"solicitudId\": {{solicitudA}},\n  \"trabajadorId\": {{trabajadorId}},\n  \"contratanteId\": {{contratanteId}},\n  \"fechaCumplida\": \"2026-10-20T15:00:00\"\n}"
+              "raw": "{\n  \"solicitudId\": \"{{solicitudA}}\",\n  \"trabajadorId\": \"{{trabajadorId}}\",\n  \"contratanteId\": \"{{contratanteId}}\",\n  \"fechaCumplida\": \"2026-10-20T15:00:00\"\n}"
             }
           },
           "event": [
@@ -93,12 +93,12 @@
                 "type": "text/javascript",
                 "exec": [
                   "// Ids nuevos en cada ejecución, para que la prueba se pueda repetir sin chocar con datos anteriores.",
-                  "const base = Math.floor(Math.random() * 1000000000);",
-                  "pm.collectionVariables.set('trabajadorId', base + 1);",
-                  "pm.collectionVariables.set('contratanteId', base + 2);",
-                  "pm.collectionVariables.set('solicitudA', base + 3);",
-                  "pm.collectionVariables.set('solicitudB', base + 4);",
-                  "pm.collectionVariables.set('solicitudCancelada', base + 5);",
+                  "const uuid = () => pm.variables.replaceIn('{{$guid}}');",
+                  "pm.collectionVariables.set('trabajadorId', uuid());",
+                  "pm.collectionVariables.set('contratanteId', uuid());",
+                  "pm.collectionVariables.set('solicitudA', uuid());",
+                  "pm.collectionVariables.set('solicitudB', uuid());",
+                  "pm.collectionVariables.set('solicitudCancelada', uuid());",
                   "pm.collectionVariables.set('hoy', new Date().toISOString().substring(0, 10));"
                 ]
               }
@@ -144,7 +144,7 @@
             "description": "",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"solicitudId\": {{solicitudB}},\n  \"trabajadorId\": {{trabajadorId}},\n  \"contratanteId\": {{contratanteId}},\n  \"fechaCumplida\": \"2026-10-20T15:00:00\"\n}"
+              "raw": "{\n  \"solicitudId\": \"{{solicitudB}}\",\n  \"trabajadorId\": \"{{trabajadorId}}\",\n  \"contratanteId\": \"{{contratanteId}}\",\n  \"fechaCumplida\": \"2026-10-20T15:00:00\"\n}"
             }
           },
           "event": [
@@ -188,7 +188,7 @@
             "description": "",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"solicitudId\": {{solicitudA}},\n  \"puntuacion\": 5,\n  \"comentario\": \"Excelente trabajo\"\n}"
+              "raw": "{\n  \"solicitudId\": \"{{solicitudA}}\",\n  \"puntuacion\": 5,\n  \"comentario\": \"Excelente trabajo\"\n}"
             }
           },
           "event": [
@@ -199,7 +199,7 @@
                 "exec": [
                   "pm.test('Responde 201', () => pm.response.to.have.status(201));",
                   "const b = pm.response.json();",
-                  "pm.test('Asociada al servicio y con código único', () => { pm.expect(b.solicitudId).to.eql(Number(pm.collectionVariables.get('solicitudA'))); pm.expect(b.codigo).to.be.a('string'); });",
+                  "pm.test('Asociada al servicio y con código único', () => { pm.expect(b.solicitudId).to.eql(pm.collectionVariables.get('solicitudA')); pm.expect(b.codigo).to.be.a('string'); });",
                   "pm.collectionVariables.set('codigoResena', b.codigo);"
                 ]
               }
@@ -235,7 +235,7 @@
             "description": "",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"solicitudId\": {{solicitudA}},\n  \"puntuacion\": 4\n}"
+              "raw": "{\n  \"solicitudId\": \"{{solicitudA}}\",\n  \"puntuacion\": 4\n}"
             }
           },
           "event": [
@@ -279,7 +279,7 @@
             "description": "",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"solicitudId\": {{solicitudA}},\n  \"puntuacion\": 1\n}"
+              "raw": "{\n  \"solicitudId\": \"{{solicitudA}}\",\n  \"puntuacion\": 1\n}"
             }
           },
           "event": [
@@ -323,7 +323,7 @@
             "description": "",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"solicitudId\": {{solicitudB}},\n  \"puntuacion\": 2,\n  \"comentario\": \"Llegó tarde\"\n}"
+              "raw": "{\n  \"solicitudId\": \"{{solicitudB}}\",\n  \"puntuacion\": 2,\n  \"comentario\": \"Llegó tarde\"\n}"
             }
           },
           "event": [
@@ -629,7 +629,7 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('Responde 200', () => pm.response.to.have.status(200));",
-                  "pm.test('Resuelto y registrado', () => { const b = pm.response.json(); pm.expect(b.estado).to.eql('RESUELTO'); pm.expect(b.moderadorId).to.eql(1); });"
+                  "pm.test('Resuelto y registrado', () => { const b = pm.response.json(); pm.expect(b.estado).to.eql('RESUELTO'); pm.expect(b.moderadorId).to.eql('00000000-0000-0000-0000-000000000900'); });"
                 ]
               }
             }
@@ -703,7 +703,7 @@
             "description": "",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"solicitudId\": {{solicitudCancelada}},\n  \"trabajadorId\": {{trabajadorId}},\n  \"fechaHoraServicio\": \"2026-11-05T10:00:00\",\n  \"fechaCancelacion\": \"2026-11-05T08:00:00\"\n}"
+              "raw": "{\n  \"solicitudId\": \"{{solicitudCancelada}}\",\n  \"trabajadorId\": \"{{trabajadorId}}\",\n  \"fechaHoraServicio\": \"2026-11-05T10:00:00\",\n  \"fechaCancelacion\": \"2026-11-05T08:00:00\"\n}"
             }
           },
           "event": [
@@ -808,7 +808,7 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{reputationUrl}}/api/v1/reputation/trabajadores/1",
+              "raw": "{{reputationUrl}}/api/v1/reputation/trabajadores/00000000-0000-0000-0000-000000999999",
               "host": [
                 "{{reputationUrl}}"
               ],
@@ -817,7 +817,7 @@
                 "v1",
                 "reputation",
                 "trabajadores",
-                "1"
+                "00000000-0000-0000-0000-000000999999"
               ]
             },
             "description": ""

@@ -1,5 +1,7 @@
 package edu.eci.dosw.oficioya.reputation.service;
 
+import java.util.UUID;
+
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
@@ -64,7 +66,7 @@ public class ReputacionService {
 
     /** Reputación del usuario calificado; se crea la primera vez que recibe una reseña o penalización. */
     @Transactional
-    public Reputacion obtenerOCrear(TipoParte tipo, Integer usuarioId) {
+    public Reputacion obtenerOCrear(TipoParte tipo, UUID usuarioId) {
         if (tipo == TipoParte.TRABAJADOR) {
             return obtenerOCrearTrabajador(usuarioId);
         }
@@ -72,7 +74,7 @@ public class ReputacionService {
                 .orElseGet(() -> reputacionContratanteRepository.save(new ReputacionContratante(usuarioId)));
     }
 
-    private ReputacionTrabajador obtenerOCrearTrabajador(Integer trabajadorId) {
+    private ReputacionTrabajador obtenerOCrearTrabajador(UUID trabajadorId) {
         return reputacionTrabajadorRepository.findByTrabajadorId(trabajadorId)
                 .orElseGet(() -> reputacionTrabajadorRepository.save(new ReputacionTrabajador(trabajadorId)));
     }
@@ -125,14 +127,14 @@ public class ReputacionService {
     }
 
     @Transactional(readOnly = true)
-    public ReputacionTrabajadorResponse consultarTrabajador(Integer trabajadorId) {
+    public ReputacionTrabajadorResponse consultarTrabajador(UUID trabajadorId) {
         return reputacionTrabajadorRepository.findByTrabajadorId(trabajadorId)
                 .map(ReputacionTrabajadorResponse::desde)
                 .orElseGet(() -> ReputacionTrabajadorResponse.sinResenas(trabajadorId));
     }
 
     @Transactional(readOnly = true)
-    public ReputacionContratanteResponse consultarContratante(Integer contratanteId) {
+    public ReputacionContratanteResponse consultarContratante(UUID contratanteId) {
         return reputacionContratanteRepository.findByContratanteId(contratanteId)
                 .map(r -> new ReputacionContratanteResponse(contratanteId, r.getPromedioCalificaciones(),
                         r.getTotalResenas()))
@@ -141,7 +143,7 @@ public class ReputacionService {
 
     /** Reputación de varios trabajadores a la vez (la consume Search). Los que no tienen reputación se omiten. */
     @Transactional(readOnly = true)
-    public List<ReputacionResumenResponse> consultarResumen(Collection<Integer> trabajadorIds) {
+    public List<ReputacionResumenResponse> consultarResumen(Collection<UUID> trabajadorIds) {
         if (trabajadorIds == null || trabajadorIds.isEmpty()) {
             return List.of();
         }

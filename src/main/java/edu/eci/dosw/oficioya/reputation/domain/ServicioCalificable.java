@@ -1,5 +1,7 @@
 package edu.eci.dosw.oficioya.reputation.domain;
 
+import java.util.UUID;
+
 import java.time.LocalDateTime;
 import java.util.Set;
 
@@ -25,13 +27,13 @@ public class ServicioCalificable {
     private Integer id;
 
     @Column(name = "solicitud_id", nullable = false, unique = true)
-    private Integer solicitudId;
+    private UUID solicitudId;
 
     @Column(name = "trabajador_id", nullable = false)
-    private Integer trabajadorId;
+    private UUID trabajadorId;
 
     @Column(name = "contratante_id", nullable = false)
-    private Integer contratanteId;
+    private UUID contratanteId;
 
     @Column(name = "fecha_cumplida", nullable = false)
     private LocalDateTime fechaCumplida;
@@ -46,7 +48,7 @@ public class ServicioCalificable {
         // requerido por JPA
     }
 
-    public ServicioCalificable(Integer solicitudId, Integer trabajadorId, Integer contratanteId,
+    public ServicioCalificable(UUID solicitudId, UUID trabajadorId, UUID contratanteId,
                                LocalDateTime fechaCumplida) {
         this.solicitudId = solicitudId;
         this.trabajadorId = trabajadorId;
@@ -57,7 +59,7 @@ public class ServicioCalificable {
     /**
      * Determina en calidad de qué parte participa el usuario en este servicio, según su id y sus roles.
      */
-    public TipoParte parteDe(Integer usuarioId, Set<TipoParte> roles) {
+    public TipoParte parteDe(UUID usuarioId, Set<TipoParte> roles) {
         if (roles.contains(TipoParte.TRABAJADOR) && trabajadorId.equals(usuarioId)) {
             return TipoParte.TRABAJADOR;
         }
@@ -86,7 +88,7 @@ public class ServicioCalificable {
     }
 
     /** Id del usuario que recibe la calificación de la parte indicada. */
-    public Integer idDe(TipoParte parte) {
+    public UUID idDe(TipoParte parte) {
         return parte == TipoParte.TRABAJADOR ? trabajadorId : contratanteId;
     }
 
@@ -94,15 +96,15 @@ public class ServicioCalificable {
         return id;
     }
 
-    public Integer getSolicitudId() {
+    public UUID getSolicitudId() {
         return solicitudId;
     }
 
-    public Integer getTrabajadorId() {
+    public UUID getTrabajadorId() {
         return trabajadorId;
     }
 
-    public Integer getContratanteId() {
+    public UUID getContratanteId() {
         return contratanteId;
     }
 

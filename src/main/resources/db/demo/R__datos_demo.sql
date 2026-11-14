@@ -1,6 +1,10 @@
 -- Datos de prueba de Reputation para la demo (OFICIO-214). Solo se cargan con el perfil datos-demo.
 -- Los trabajadores 101 a 107 son los simulados en Search, con su mismo promedio y número de reseñas.
 -- El trabajador 108 está pausado, por eso Search no lo devuelve. Si los datos ya existen, no se hace nada.
+-- Los ids de otros dominios son UUID legibles: demo_uid(101) = 00000000-0000-0000-0000-000000000101.
+
+CREATE OR REPLACE FUNCTION demo_uid(n BIGINT) RETURNS UUID LANGUAGE SQL IMMUTABLE AS
+$f$ SELECT ('00000000-0000-0000-0000-' || lpad(n::TEXT, 12, '0'))::UUID $f$;
 
 DO $$
 DECLARE
@@ -21,7 +25,7 @@ DECLARE
         'Tuve que llamar a otra persona para terminar.',
         'El resultado no fue el esperado.'];
 BEGIN
-    IF EXISTS (SELECT 1 FROM servicio_calificable WHERE solicitud_id = 900001) THEN
+    IF EXISTS (SELECT 1 FROM servicio_calificable WHERE solicitud_id = demo_uid(900001)) THEN
         RETURN;
     END IF;
 
@@ -36,17 +40,18 @@ BEGIN
         RETURNING id INTO reputacion_pk;
 
         INSERT INTO reputacion_trabajador (id, trabajador_id, penalizacion_acumulada, estado)
-        VALUES (reputacion_pk, t.trabajador_id, t.penalizacion, 'ACTIVO');
+        VALUES (reputacion_pk, demo_uid(t.trabajador_id), t.penalizacion, 'ACTIVO');
 
         FOR i IN 1..t.total LOOP
             INSERT INTO servicio_calificable (solicitud_id, trabajador_id, contratante_id, fecha_cumplida,
                                               calificado_por_contratante)
-            VALUES (t.trabajador_id * 1000 + i, t.trabajador_id, 201 + i % 10, NOW() - i * INTERVAL '31 hours', TRUE)
+            VALUES (demo_uid(t.trabajador_id * 1000 + i), demo_uid(t.trabajador_id), demo_uid(201 + i % 10), NOW() - i * INTERVAL '31 hours', TRUE)
             RETURNING id INTO servicio_pk;
 
             INSERT INTO resena (codigo, servicio_id, reputacion_id, autor_id, tipo_autor, calificado_id,
                                 tipo_calificado, puntuacion, comentario, fecha_creacion)
-            VALUES (gen_random_uuid(), servicio_pk, reputacion_pk, 201 + i % 10, 'CONTRATANTE', t.trabajador_id,
+            VALUES (gen_random_uuid(), servicio_pk, reputacion_pk, demo_uid(201 + i % 10), 'CONTRATANTE',
+                    demo_uid(t.trabajador_id),
                     'TRABAJADOR',
                     CASE WHEN i * t.cuatros / t.total <> (i - 1) * t.cuatros / t.total THEN 4 ELSE 5 END,
                     CASE WHEN i % 4 = 0 THEN NULL ELSE comentarios[1 + i % 5] END,
@@ -57,9 +62,9 @@ BEGIN
     -- Penalización de la trabajadora 104: 4,7 de promedio menos 0,5 da los 4,2 que muestra Search.
     INSERT INTO penalizacion (reputacion_trabajador_id, solicitud_id, puntos, motivo, fecha_hora_servicio,
                               fecha_cancelacion, fecha_aplicacion)
-    SELECT id, 104900, 0.5, 'Cancelación con menos de 24 horas de anticipación', NOW() - INTERVAL '9 days',
+    SELECT id, demo_uid(104900), 0.5, 'Cancelación con menos de 24 horas de anticipación', NOW() - INTERVAL '9 days',
            NOW() - INTERVAL '10 days', NOW() - INTERVAL '10 days'
-    FROM reputacion_trabajador WHERE trabajador_id = 104;
+    FROM reputacion_trabajador WHERE trabajador_id = demo_uid(104);
 
     -- Trabajador pausado: promedio de 2,4 y las últimas 5 reseñas por debajo de 3.
     INSERT INTO reputacion (tipo, promedio_calificaciones, total_resenas, fecha_actualizacion)
@@ -67,41 +72,44 @@ BEGIN
     RETURNING id INTO reputacion_pk;
 
     INSERT INTO reputacion_trabajador (id, trabajador_id, penalizacion_acumulada, estado, fecha_pausado)
-    VALUES (reputacion_pk, 108, 0, 'PAUSADO', NOW() - INTERVAL '1 day');
+    VALUES (reputacion_pk, demo_uid(108), 0, 'PAUSADO', NOW() - INTERVAL '1 day');
 
     FOR i IN 1..10 LOOP
         INSERT INTO servicio_calificable (solicitud_id, trabajador_id, contratante_id, fecha_cumplida,
                                           calificado_por_contratante)
-        VALUES (108000 + i, 108, 201 + i % 10, NOW() - i * INTERVAL '4 days', TRUE)
+        VALUES (demo_uid(108000 + i), demo_uid(108), demo_uid(201 + i % 10), NOW() - i * INTERVAL '4 days', TRUE)
         RETURNING id INTO servicio_pk;
 
         INSERT INTO resena (codigo, servicio_id, reputacion_id, autor_id, tipo_autor, calificado_id,
                             tipo_calificado, puntuacion, comentario, fecha_creacion)
-        VALUES (gen_random_uuid(), servicio_pk, reputacion_pk, 201 + i % 10, 'CONTRATANTE', 108, 'TRABAJADOR',
+        VALUES (gen_random_uuid(), servicio_pk, reputacion_pk, demo_uid(201 + i % 10), 'CONTRATANTE', demo_uid(108), 'TRABAJADOR',
                 puntuaciones[i], quejas[1 + i % 5], NOW() - i * INTERVAL '4 days' + INTERVAL '2 hours');
     END LOOP;
 
     -- Reportes de reseñas: tres pendientes para moderar y uno ya resuelto.
     INSERT INTO reporte_resena (resena_id, reportante_id, motivo, descripcion, estado, fecha_reporte)
-    SELECT r.id, 108, 'OFENSIVA', 'El comentario es irrespetuoso.', 'PENDIENTE', NOW() - INTERVAL '6 hours'
-    FROM resena r JOIN servicio_calificable s ON s.id = r.servicio_id WHERE s.solicitud_id = 108001;
+    SELECT r.id, demo_uid(108), 'OFENSIVA', 'El comentario es irrespetuoso.', 'PENDIENTE', NOW() - INTERVAL '6 hours'
+    FROM resena r JOIN servicio_calificable s ON s.id = r.servicio_id WHERE s.solicitud_id = demo_uid(108001);
 
     INSERT INTO reporte_resena (resena_id, reportante_id, motivo, descripcion, estado, fecha_reporte)
-    SELECT r.id, 108, 'FALSA', 'Ese servicio sí se terminó.', 'PENDIENTE', NOW() - INTERVAL '5 hours'
-    FROM resena r JOIN servicio_calificable s ON s.id = r.servicio_id WHERE s.solicitud_id = 108002;
+    SELECT r.id, demo_uid(108), 'FALSA', 'Ese servicio sí se terminó.', 'PENDIENTE', NOW() - INTERVAL '5 hours'
+    FROM resena r JOIN servicio_calificable s ON s.id = r.servicio_id WHERE s.solicitud_id = demo_uid(108002);
 
     INSERT INTO reporte_resena (resena_id, reportante_id, motivo, descripcion, estado, fecha_reporte)
-    SELECT r.id, 104, 'INAPROPIADA', NULL, 'PENDIENTE', NOW() - INTERVAL '3 hours'
-    FROM resena r JOIN servicio_calificable s ON s.id = r.servicio_id WHERE s.solicitud_id = 104001;
+    SELECT r.id, demo_uid(104), 'INAPROPIADA', NULL, 'PENDIENTE', NOW() - INTERVAL '3 hours'
+    FROM resena r JOIN servicio_calificable s ON s.id = r.servicio_id WHERE s.solicitud_id = demo_uid(104001);
 
     INSERT INTO reporte_resena (resena_id, reportante_id, motivo, descripcion, estado, fecha_reporte, moderador_id,
                                 resultado, fecha_resolucion)
-    SELECT r.id, 103, 'OTRO', 'No estoy de acuerdo con la calificación.', 'RESUELTO', NOW() - INTERVAL '3 days', 1,
+    SELECT r.id, demo_uid(103), 'OTRO', 'No estoy de acuerdo con la calificación.', 'RESUELTO',
+           NOW() - INTERVAL '3 days', demo_uid(1),
            'RESENA_MANTENIDA', NOW() - INTERVAL '2 days'
-    FROM resena r JOIN servicio_calificable s ON s.id = r.servicio_id WHERE s.solicitud_id = 103001;
+    FROM resena r JOIN servicio_calificable s ON s.id = r.servicio_id WHERE s.solicitud_id = demo_uid(103001);
 
     -- Servicios cumplidos sin calificar, para probar la pantalla de calificar con el contratante 201.
     INSERT INTO servicio_calificable (solicitud_id, trabajador_id, contratante_id, fecha_cumplida)
-    VALUES (900001, 101, 201, NOW() - INTERVAL '2 hours'),
-           (900002, 102, 201, NOW() - INTERVAL '1 day');
+    VALUES (demo_uid(900001), demo_uid(101), demo_uid(201), NOW() - INTERVAL '2 hours'),
+           (demo_uid(900002), demo_uid(102), demo_uid(201), NOW() - INTERVAL '1 day');
 END $$;
+
+DROP FUNCTION demo_uid(BIGINT);

@@ -3,33 +3,40 @@ package edu.eci.dosw.oficioya.reputation.dto;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-import edu.eci.dosw.oficioya.reputation.domain.MotivoReporte;
 import edu.eci.dosw.oficioya.reputation.domain.ReporteResena;
 import edu.eci.dosw.oficioya.reputation.domain.Resena;
 
 /**
- * Correo que Reputation pide enviar al administrador (vía Orchestrator → Notificaciones) cuando se reporta una
- * reseña. Lleva ids y el contenido de la reseña, nunca nombres ni datos de contacto de los usuarios.
+ * Aviso al administrador cuando se reporta una reseña, en el formato real de Notification
+ * ({@code POST /api/v1/notification}, vía Orchestrator). Lleva ids y el contenido de la reseña, nunca nombres ni
+ * datos de contacto de los usuarios.
+ *
+ * @param receiverId  id (UUID) del administrador que recibe el aviso
+ * @param title       título del aviso
+ * @param description detalle del reporte
+ * @param type        tipo de notificación; Notification aún no tiene uno para reseñas reportadas, así que es
+ *                    configurable y por defecto va vacío ({@code null})
+ * @param requestId   solicitud de servicio a la que pertenece la reseña
+ * @param dateCreated fecha del reporte
  */
 public record AvisoReporteResenaDTO(
-        String destinatario,
-        String asunto,
-        Integer reporteId,
-        UUID codigoResena,
-        Integer calificadoId,
-        int puntuacion,
-        String comentario,
-        Integer reportanteId,
-        MotivoReporte motivo,
-        String descripcion,
-        LocalDateTime fechaReporte) {
+        UUID receiverId,
+        String title,
+        String description,
+        String type,
+        UUID requestId,
+        LocalDateTime dateCreated) {
 
-    public static AvisoReporteResenaDTO de(ReporteResena reporte, String destinatario) {
+    public static AvisoReporteResenaDTO de(ReporteResena reporte, UUID administradorId, String tipo) {
         Resena resena = reporte.getResena();
-        return new AvisoReporteResenaDTO(destinatario,
-                "OficioYa · Reseña reportada (" + reporte.getMotivo() + ")",
-                reporte.getId(), resena.getCodigo(), resena.getCalificadoId(), resena.getPuntuacion(),
-                resena.getComentario(), reporte.getReportanteId(), reporte.getMotivo(), reporte.getDescripcion(),
-                reporte.getFechaReporte());
+        String detalle = "Reporte " + reporte.getId() + " de la reseña " + resena.getCodigo()
+                + " (puntuación " + resena.getPuntuacion() + ", calificado " + resena.getCalificadoId() + "). "
+                + "Motivo: " + reporte.getMotivo() + ". Reportado por " + reporte.getReportanteId() + ": "
+                + reporte.getDescripcion()
+                + (resena.getComentario() == null ? "" : " | Comentario de la reseña: " + resena.getComentario());
+        return new AvisoReporteResenaDTO(administradorId,
+                "OficioYa · Reseña reportada (" + reporte.getMotivo() + ")", detalle,
+                tipo == null || tipo.isBlank() ? null : tipo.trim(),
+                resena.getServicio().getSolicitudId(), reporte.getFechaReporte());
     }
 }

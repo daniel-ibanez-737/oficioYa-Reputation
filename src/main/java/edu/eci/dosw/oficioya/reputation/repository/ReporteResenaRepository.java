@@ -1,5 +1,7 @@
 package edu.eci.dosw.oficioya.reputation.repository;
 
+import java.util.UUID;
+
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -14,7 +16,7 @@ public interface ReporteResenaRepository extends JpaRepository<ReporteResena, In
 
     List<ReporteResena> findAllByOrderByFechaReporteAscIdAsc();
 
-    boolean existsByResenaIdAndReportanteIdAndEstadoNot(Integer resenaId, Integer reportanteId, EstadoReporte estado);
+    boolean existsByResenaIdAndReportanteIdAndEstadoNot(Integer resenaId, UUID reportanteId, EstadoReporte estado);
 
     List<ReporteResena> findByResenaIdAndEstadoNot(Integer resenaId, EstadoReporte estado);
 

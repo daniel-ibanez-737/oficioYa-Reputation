@@ -18,18 +18,20 @@ server:
 oficioya:
   security:
     # Secreto compartido con Identity (Squad 1). En producción se define con la variable JWT_SECRET.
-    jwt-secret: ${JWT_SECRET:cambiar-este-secreto-de-desarrollo-de-al-menos-32-bytes}
+    jwt-secret: ${JWT_SECRET:Y2FtYmlhci1lc3RlLXNlY3JldG8tZGUtZGVzYXJyb2xsby1kZS1hbC1tZW5vcy0zMi1ieXRlcw==}
     roles-claim: ${JWT_ROLES_CLAIM:roles}
   orquestador:
     # Toda comunicación con otros dominios o con la IA sale por el Orchestrator.
     base-url: ${ORQUESTADOR_URL:http://localhost:8080}
-    # SUPUESTO: rutas del Orchestrator hacia Worker y Notificaciones, pendientes de confirmar con Squad 1.
+    # Rutas reales de Worker (Squad 3) y Notification, a través del Orchestrator.
     rutas:
-      estado-trabajador: /api/workers/trabajadores/{trabajadorId}/estado
-      correo: /api/notifications/correos
+      estado-trabajador: /api/v1/workers/{trabajadorId}/status
+      correo: /api/v1/notification
   reputation:
-    # Correo del administrador que recibe los reportes de reseñas. En producción se define con ADMIN_EMAIL.
-    correo-administrador: ${ADMIN_EMAIL:admin@oficioya.com}
+    # Id (UUID) del administrador que recibe el aviso de reseñas reportadas. En producción se define con ADMIN_ID.
+    administrador-id: ${ADMIN_ID:00000000-0000-0000-0000-000000000900}
+    # Tipo de notificación del aviso. Notification aún no tiene uno para reseñas reportadas: vacío = se envía null.
+    tipo-aviso-reporte: ${TIPO_AVISO_REPORTE:}
     # Reglas de reputación (OFICIO-168). Se pueden cambiar sin recompilar.
     reglas:
       umbral-pausa: 3.0

@@ -62,10 +62,11 @@ docker run --rm -v "$PWD":/app -w /app maven:3.9-eclipse-temurin-21 mvn verify
 ## Variables de entorno
 | Variable | Uso | Valor por defecto (desarrollo) |
 |---|---|---|
-| `JWT_SECRET` | Secreto para validar el JWT | valor de desarrollo |
+| `JWT_SECRET` | Secreto compartido con Identity, en Base64 (igual que Identity) | valor de desarrollo |
 | `JWT_ROLES_CLAIM` | Claim del JWT con los roles | `roles` |
 | `ORQUESTADOR_URL` | URL del Orchestrator | `http://localhost:8080` |
-| `ADMIN_EMAIL` | Correo del administrador que recibe los reportes de reseñas | `admin@oficioya.com` |
+| `ADMIN_ID` | Id (UUID) del administrador que recibe el aviso de reseñas reportadas | `00000000-0000-0000-0000-000000000900` |
+| `TIPO_AVISO_REPORTE` | Tipo de notificación del aviso (Notification aún no tiene uno para reseñas) | vacío |
 | `DB_URL`, `DB_USER`, `DB_PASSWORD` | Conexión a PostgreSQL | `jdbc:postgresql://localhost:5432/oficioya_reputation`, `oficioya` |
 
 ## Reglas configurables (`oficioya.reputation.reglas`)
@@ -84,24 +85,33 @@ docker run --rm -v "$PWD":/app -w /app maven:3.9-eclipse-temurin-21 mvn verify
 | GET | `/api/v1/reputation/trabajadores/{id}/resenas` | cualquiera | Reseñas visibles del trabajador (solo lectura). |
 | GET | `/api/v1/reputation/trabajadores/{id}` | cualquiera | Promedio, penalización, reputación final y estado. |
 | GET | `/api/v1/reputation/contratantes/{id}` | cualquiera | Promedio del contratante. |
-| GET | `/api/v1/reputation/reputaciones?trabajadorIds=1,2` | cualquiera | Resumen para Search. |
-| POST | `/api/v1/reputation/resenas/{codigo}/reportes` | TRABAJADOR, CONTRATANTE | Reportar una reseña (queda PENDIENTE). La `descripcion` es obligatoria, de 50 a 500 caracteres. Se envía un correo al administrador vía Orchestrator. |
-| GET | `/api/v1/reputation/reportes?estado=PENDIENTE` | ADMINISTRADOR | Reportes para moderar. |
-| POST | `/api/v1/reputation/reportes/{id}/resolucion` | ADMINISTRADOR | `RESENA_RETIRADA` o `RESENA_MANTENIDA`. |
-| GET | `/api/v1/reputation/estadisticas?desde&hasta` | ADMINISTRADOR | Datos agregados para Reporting. |
-| POST | `/api/v1/reputation/eventos/servicios-cumplidos` | SISTEMA | Aviso de Service: la solicitud quedó Cumplida (habilita calificar). |
-| POST | `/api/v1/reputation/eventos/cancelaciones-tardias` | SISTEMA | Aviso de Service: el trabajador canceló (aplica −0,5 si fue tardía). |
+| GET | `/api/v1/reputation/reputaciones?trabajadorIds={uuid},{uuid}` | cualquiera | Resumen para Search. |
+| POST | `/api/v1/reputation/resenas/{codigo}/reportes` | TRABAJADOR, CONTRATANTE | Reportar una reseña (queda PENDIENTE). La `descripcion` es obligatoria, de 50 a 500 caracteres. Se avisa al administrador vía Orchestrator → Notification. |
+| GET | `/api/v1/reputation/reportes?estado=PENDIENTE` | ADMIN | Reportes para moderar. |
+| POST | `/api/v1/reputation/reportes/{id}/resolucion` | ADMIN | `RESENA_RETIRADA` o `RESENA_MANTENIDA`. |
+| GET | `/api/v1/reputation/estadisticas?desde&hasta` | ADMIN | Datos agregados para Reporting. |
+| POST | `/api/v1/reputation/eventos/servicios-cumplidos` | SISTEMA, ADMIN | Aviso de Service: la solicitud quedó Cumplida (habilita calificar). |
+| POST | `/api/v1/reputation/eventos/cancelaciones-tardias` | SISTEMA, ADMIN | Aviso de Service: el trabajador canceló (aplica −0,5 si fue tardía). |
 
 Errores: `400` validación, `401` sin JWT, `403` rol o usuario sin permiso, `404` no existe, `409` conflicto (por ejemplo, calificar dos veces).
 
-Cuando un trabajador se pausa, Reputation avisa a Worker a través del Orchestrator.
-Con el perfil `demo` ese aviso solo se escribe en el log.
+Los ids de usuarios, trabajadores y solicitudes son UUID (los mismos de Identity, Worker y Service).
+
+Cuando un trabajador se pausa, Reputation avisa a Worker a través del Orchestrator con su API real
+(`PUT /api/v1/workers/{id}/status`, cuerpo `{"status": "PAUSED"}`). Cuando se reporta una reseña, avisa al
+administrador con la API real de Notification (`POST /api/v1/notification`: `receiverId`, `title`, `description`,
+`type`, `requestId`, `dateCreated`). Con el perfil `demo` esos avisos solo se escriben en el log.
+
+## Formato del JWT (acordado con Identity, Squad 1)
+- Firma HS256 con el secreto decodificado de Base64.
+- `sub`: id (UUID) del usuario.
+- `roles`: lista sin prefijo (`CONTRATANTE`, `TRABAJADOR`, `ADMIN`, `SISTEMA`).
 
 ## Supuestos pendientes de confirmar
-- El `sub` del JWT es el id numérico del usuario y el Orchestrator envía los avisos con `ROLE_SISTEMA` (Squad 1).
-- Formato de los avisos de Service (Squad 3) y ruta hacia Worker (`oficioya.orquestador.rutas.estado-trabajador`).
-- Ruta del Orchestrator hacia Notificaciones para el correo al administrador (`oficioya.orquestador.rutas.correo`,
-  por defecto `POST /api/notifications/correos`) y formato del correo (`AvisoReporteResenaDTO`).
+- Service (Squad 4) todavía no envía los avisos de servicio cumplido y de cancelación tardía (está como TODO).
+- Worker solo permite cambiar el estado con rol `ADMIN`; falta que acepte `SISTEMA`. El id que se usa es el del
+  trabajador en Worker.
+- Notification solo acepta `ADMIN` y no tiene un `type` para reseñas reportadas (se envía vacío hasta que exista).
 - Una reseña reportada sigue visible hasta que se resuelva el reporte.
 - El proceso de reactivación de un trabajador pausado aún no está definido (RF-05), así que no se implementó.
 

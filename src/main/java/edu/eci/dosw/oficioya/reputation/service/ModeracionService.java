@@ -37,16 +37,19 @@ public class ModeracionService {
     private final ReporteResenaRepository reporteRepository;
     private final ReputacionService reputacionService;
     private final OrquestadorClient orquestador;
-    private final String correoAdministrador;
+    private final UUID administradorId;
+    private final String tipoAvisoReporte;
 
     public ModeracionService(ResenaRepository resenaRepository, ReporteResenaRepository reporteRepository,
                              ReputacionService reputacionService, OrquestadorClient orquestador,
-                             @Value("${oficioya.reputation.correo-administrador}") String correoAdministrador) {
+                             @Value("${oficioya.reputation.administrador-id}") UUID administradorId,
+                             @Value("${oficioya.reputation.tipo-aviso-reporte:}") String tipoAvisoReporte) {
         this.resenaRepository = resenaRepository;
         this.reporteRepository = reporteRepository;
         this.reputacionService = reputacionService;
         this.orquestador = orquestador;
-        this.correoAdministrador = correoAdministrador;
+        this.administradorId = administradorId;
+        this.tipoAvisoReporte = tipoAvisoReporte;
     }
 
     /**
@@ -79,7 +82,7 @@ public class ModeracionService {
      */
     private void avisarAlAdministrador(ReporteResena reporte) {
         try {
-            orquestador.enviarCorreoReporteResena(AvisoReporteResenaDTO.de(reporte, correoAdministrador));
+            orquestador.enviarCorreoReporteResena(AvisoReporteResenaDTO.de(reporte, administradorId, tipoAvisoReporte));
         } catch (IntegracionException e) {
             log.error("No se pudo enviar el correo del reporte {} al administrador: {}", reporte.getId(),
                     e.getMessage());

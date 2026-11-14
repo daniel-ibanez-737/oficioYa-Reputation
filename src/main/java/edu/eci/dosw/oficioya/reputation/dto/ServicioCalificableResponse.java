@@ -1,10 +1,12 @@
 package edu.eci.dosw.oficioya.reputation.dto;
 
+import java.util.UUID;
+
 import java.time.LocalDateTime;
 
 import edu.eci.dosw.oficioya.reputation.domain.ServicioCalificable;
 
-public record ServicioCalificableResponse(Integer solicitudId, Integer trabajadorId, Integer contratanteId,
+public record ServicioCalificableResponse(UUID solicitudId, UUID trabajadorId, UUID contratanteId,
                                           LocalDateTime fechaCumplida) {
 
     public static ServicioCalificableResponse desde(ServicioCalificable s) {

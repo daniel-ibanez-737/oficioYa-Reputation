@@ -25,8 +25,8 @@ public class OrquestadorClientSimulado implements OrquestadorClient {
 
     @Override
     public void enviarCorreoReporteResena(AvisoReporteResenaDTO aviso) {
-        log.info("[demo] Correo al administrador vía Orchestrator: para={} asunto=\"{}\" reporteId={} resena={} "
-                + "motivo={} descripcion=\"{}\"", aviso.destinatario(), aviso.asunto(), aviso.reporteId(),
-                aviso.codigoResena(), aviso.motivo(), aviso.descripcion());
+        log.info("[demo] Aviso al administrador vía Orchestrator → Notification: para={} titulo=\"{}\" "
+                + "solicitud={} detalle=\"{}\"", aviso.receiverId(), aviso.title(), aviso.requestId(),
+                aviso.description());
     }
 }

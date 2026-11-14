@@ -1,5 +1,7 @@
 package edu.eci.dosw.oficioya.reputation.client;
 
+import static edu.eci.dosw.oficioya.reputation.IdsDePrueba.id;
+
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.content;
@@ -20,10 +22,8 @@ import org.springframework.test.web.client.MockRestServiceServer;
 import org.springframework.web.client.RestClient;
 
 import java.time.LocalDateTime;
-import java.util.UUID;
 
 import edu.eci.dosw.oficioya.reputation.domain.EstadoTrabajador;
-import edu.eci.dosw.oficioya.reputation.domain.MotivoReporte;
 import edu.eci.dosw.oficioya.reputation.dto.AvisoReporteResenaDTO;
 import edu.eci.dosw.oficioya.reputation.dto.CambioEstadoTrabajadorDTO;
 import edu.eci.dosw.oficioya.reputation.exception.IntegracionException;
@@ -32,10 +32,9 @@ class OrquestadorClientTest {
 
     private static final String BASE = "http://orquestador";
     private static final CambioEstadoTrabajadorDTO PAUSA =
-            new CambioEstadoTrabajadorDTO(101, EstadoTrabajador.PAUSADO, "baja reputación");
-    private static final AvisoReporteResenaDTO CORREO = new AvisoReporteResenaDTO("admin@oficioya.com",
-            "OficioYa · Reseña reportada (FALSA)", 7, UUID.randomUUID(), 101, 1, "Malo", 202, MotivoReporte.FALSA,
-            "x".repeat(50), LocalDateTime.of(2026, 11, 11, 10, 0));
+            new CambioEstadoTrabajadorDTO(id(101), EstadoTrabajador.PAUSADO, "baja reputación");
+    private static final AvisoReporteResenaDTO CORREO = new AvisoReporteResenaDTO(id(900),
+            "OficioYa · Reseña reportada (FALSA)", "Reporte 7", null, id(301), LocalDateTime.of(2026, 11, 11, 10, 0));
 
     private MockRestServiceServer servidor;
     private OrquestadorRestClient cliente;
@@ -44,8 +43,8 @@ class OrquestadorClientTest {
     void preparar() {
         RestClient.Builder builder = RestClient.builder();
         servidor = MockRestServiceServer.bindTo(builder).build();
-        cliente = new OrquestadorRestClient(builder, BASE, "/api/workers/trabajadores/{trabajadorId}/estado",
-                "/api/notifications/correos");
+        cliente = new OrquestadorRestClient(builder, BASE, "/api/v1/workers/{trabajadorId}/status",
+                "/api/v1/notification");
     }
 
     @AfterEach
@@ -57,10 +56,10 @@ class OrquestadorClientTest {
     void avisaAWorkerPorElOrquestadorReenviandoElJwt() {
         Jwt jwt = Jwt.withTokenValue("token-sistema").header("alg", "HS256").subject("1").build();
         SecurityContextHolder.getContext().setAuthentication(new JwtAuthenticationToken(jwt));
-        servidor.expect(requestTo(BASE + "/api/workers/trabajadores/101/estado"))
+        servidor.expect(requestTo(BASE + "/api/v1/workers/00000000-0000-0000-0000-000000000101/status"))
                 .andExpect(method(HttpMethod.PUT))
                 .andExpect(header("Authorization", "Bearer token-sistema"))
-                .andExpect(content().json("{\"trabajadorId\": 101, \"estado\": \"PAUSADO\"}"))
+                .andExpect(content().json("{\"status\": \"PAUSED\"}"))
                 .andRespond(withSuccess());
 
         cliente.notificarCambioEstadoTrabajador(PAUSA);
@@ -70,17 +69,17 @@ class OrquestadorClientTest {
 
     @Test
     void losErroresSeConviertenEnIntegracionException() {
-        servidor.expect(requestTo(BASE + "/api/workers/trabajadores/101/estado")).andRespond(withServerError());
+        servidor.expect(requestTo(BASE + "/api/v1/workers/00000000-0000-0000-0000-000000000101/status")).andRespond(withServerError());
         assertThatThrownBy(() -> cliente.notificarCambioEstadoTrabajador(PAUSA))
                 .isInstanceOf(IntegracionException.class);
     }
 
     @Test
     void pideElCorreoDelReporteANotificacionesPorElOrquestador() {
-        servidor.expect(requestTo(BASE + "/api/notifications/correos"))
+        servidor.expect(requestTo(BASE + "/api/v1/notification"))
                 .andExpect(method(HttpMethod.POST))
-                .andExpect(content().json("{\"destinatario\": \"admin@oficioya.com\", \"reporteId\": 7, "
-                        + "\"motivo\": \"FALSA\"}"))
+                .andExpect(content().json("{\"receiverId\": \"00000000-0000-0000-0000-000000000900\", "
+                        + "\"requestId\": \"00000000-0000-0000-0000-000000000301\", \"description\": \"Reporte 7\"}"))
                 .andRespond(withSuccess());
 
         cliente.enviarCorreoReporteResena(CORREO);
@@ -90,7 +89,7 @@ class OrquestadorClientTest {
 
     @Test
     void siNotificacionesFallaElCorreoLanzaIntegracionException() {
-        servidor.expect(requestTo(BASE + "/api/notifications/correos")).andRespond(withServerError());
+        servidor.expect(requestTo(BASE + "/api/v1/notification")).andRespond(withServerError());
         assertThatThrownBy(() -> cliente.enviarCorreoReporteResena(CORREO))
                 .isInstanceOf(IntegracionException.class);
     }

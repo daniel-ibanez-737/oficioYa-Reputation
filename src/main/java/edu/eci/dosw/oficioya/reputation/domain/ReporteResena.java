@@ -1,5 +1,7 @@
 package edu.eci.dosw.oficioya.reputation.domain;
 
+import java.util.UUID;
+
 import java.time.LocalDateTime;
 
 import org.hibernate.annotations.JdbcTypeCode;
@@ -35,7 +37,7 @@ public class ReporteResena {
     private Resena resena;
 
     @Column(name = "reportante_id", nullable = false)
-    private Integer reportanteId;
+    private UUID reportanteId;
 
     @Enumerated(EnumType.STRING)
     @JdbcTypeCode(SqlTypes.VARCHAR)
@@ -54,7 +56,7 @@ public class ReporteResena {
     private LocalDateTime fechaReporte;
 
     @Column(name = "moderador_id")
-    private Integer moderadorId;
+    private UUID moderadorId;
 
     @Enumerated(EnumType.STRING)
     @JdbcTypeCode(SqlTypes.VARCHAR)
@@ -68,7 +70,7 @@ public class ReporteResena {
         // requerido por JPA
     }
 
-    public ReporteResena(Resena resena, Integer reportanteId, MotivoReporte motivo, String descripcion,
+    public ReporteResena(Resena resena, UUID reportanteId, MotivoReporte motivo, String descripcion,
                          LocalDateTime fechaReporte) {
         this.resena = resena;
         this.reportanteId = reportanteId;
@@ -79,7 +81,7 @@ public class ReporteResena {
     }
 
     /** Registra la decisión del administrador. Un reporte resuelto no se puede volver a resolver. */
-    public void resolver(Integer moderadorId, ResultadoModeracion resultado, LocalDateTime fecha) {
+    public void resolver(UUID moderadorId, ResultadoModeracion resultado, LocalDateTime fecha) {
         if (estaResuelto()) {
             throw new ConflictoException("El reporte ya fue resuelto");
         }
@@ -101,7 +103,7 @@ public class ReporteResena {
         return resena;
     }
 
-    public Integer getReportanteId() {
+    public UUID getReportanteId() {
         return reportanteId;
     }
 
@@ -121,7 +123,7 @@ public class ReporteResena {
         return fechaReporte;
     }
 
-    public Integer getModeradorId() {
+    public UUID getModeradorId() {
         return moderadorId;
     }
 

@@ -1,5 +1,7 @@
 package edu.eci.dosw.oficioya.reputation.dto;
 
+import java.util.UUID;
+
 import java.time.LocalDateTime;
 
 import jakarta.validation.constraints.NotNull;
@@ -9,8 +11,8 @@ import jakarta.validation.constraints.NotNull;
  * SUPUESTO: contrato pendiente de acordar con el Squad 3.
  */
 public record ServicioCumplidoEvento(
-        @NotNull Integer solicitudId,
-        @NotNull Integer trabajadorId,
-        @NotNull Integer contratanteId,
+        @NotNull UUID solicitudId,
+        @NotNull UUID trabajadorId,
+        @NotNull UUID contratanteId,
         @NotNull LocalDateTime fechaCumplida) {
 }

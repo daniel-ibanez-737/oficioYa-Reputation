@@ -1,4 +1,6 @@
 package edu.eci.dosw.oficioya.reputation.dto;
 
-public record ReputacionContratanteResponse(Integer contratanteId, double promedioCalificaciones, int totalResenas) {
+import java.util.UUID;
+
+public record ReputacionContratanteResponse(UUID contratanteId, double promedioCalificaciones, int totalResenas) {
 }

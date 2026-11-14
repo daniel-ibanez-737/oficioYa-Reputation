@@ -1,5 +1,7 @@
 package edu.eci.dosw.oficioya.reputation.domain;
 
+import java.util.UUID;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.DiscriminatorValue;
 import jakarta.persistence.Entity;
@@ -16,13 +18,13 @@ import jakarta.persistence.Table;
 public class ReputacionContratante extends Reputacion {
 
     @Column(name = "contratante_id", nullable = false, unique = true)
-    private Integer contratanteId;
+    private UUID contratanteId;
 
     protected ReputacionContratante() {
         // requerido por JPA
     }
 
-    public ReputacionContratante(Integer contratanteId) {
+    public ReputacionContratante(UUID contratanteId) {
         this.contratanteId = contratanteId;
     }
 
@@ -36,7 +38,7 @@ public class ReputacionContratante extends Reputacion {
         return TipoParte.CONTRATANTE;
     }
 
-    public Integer getContratanteId() {
+    public UUID getContratanteId() {
         return contratanteId;
     }
 }
