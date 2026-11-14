@@ -59,10 +59,12 @@ class ReglasYModeloTest {
         assertThat(servicio.parteDe(id(10), Set.of(TipoParte.TRABAJADOR))).isEqualTo(TipoParte.TRABAJADOR);
         assertThat(servicio.parteDe(id(20), Set.of(TipoParte.CONTRATANTE))).isEqualTo(TipoParte.CONTRATANTE);
         Set<TipoParte> soloContratante = Set.of(TipoParte.CONTRATANTE);
-        assertThatThrownBy(() -> servicio.parteDe(id(10), soloContratante))
+        UUID id10 = id(10);
+        assertThatThrownBy(() -> servicio.parteDe(id10, soloContratante))
                 .isInstanceOf(OperacionNoPermitidaException.class);
         Set<TipoParte> ambos = Set.of(TipoParte.TRABAJADOR, TipoParte.CONTRATANTE);
-        assertThatThrownBy(() -> servicio.parteDe(id(99), ambos)).isInstanceOf(OperacionNoPermitidaException.class);
+        UUID id99 = id(99);
+        assertThatThrownBy(() -> servicio.parteDe(id99, ambos)).isInstanceOf(OperacionNoPermitidaException.class);
     }
 
     @Test
@@ -91,11 +93,13 @@ class ReglasYModeloTest {
         assertThat(resena.isVisible()).isFalse();
 
         assertThat(new Resena(servicio, reputacion, id(20), TipoParte.CONTRATANTE, 3, " ", AHORA).getComentario()).isNull();
-        assertThatThrownBy(() -> new Resena(servicio, reputacion, id(20), TipoParte.CONTRATANTE, 0, null, AHORA))
+        UUID id20 = id(20);
+        assertThatThrownBy(() -> new Resena(servicio, reputacion, id20, TipoParte.CONTRATANTE, 0, null, AHORA))
                 .isInstanceOf(SolicitudInvalidaException.class);
-        assertThatThrownBy(() -> new Resena(servicio, reputacion, id(20), TipoParte.CONTRATANTE, 6, null, AHORA))
+        assertThatThrownBy(() -> new Resena(servicio, reputacion, id20, TipoParte.CONTRATANTE, 6, null, AHORA))
                 .isInstanceOf(SolicitudInvalidaException.class);
-        assertThatThrownBy(() -> new Resena(servicio, reputacion, id(10), TipoParte.TRABAJADOR, 4, null, AHORA))
+        UUID id10 = id(10);
+        assertThatThrownBy(() -> new Resena(servicio, reputacion, id10, TipoParte.TRABAJADOR, 4, null, AHORA))
                 .isInstanceOf(IllegalArgumentException.class);
     }
 
@@ -143,7 +147,8 @@ class ReglasYModeloTest {
         reporte.resolver(id(1), ResultadoModeracion.RESENA_MANTENIDA, AHORA);
         assertThat(reporte.estaResuelto()).isTrue();
         assertThat(reporte.getModeradorId()).isEqualTo(id(1));
-        assertThatThrownBy(() -> reporte.resolver(id(1), ResultadoModeracion.RESENA_RETIRADA, AHORA))
+        UUID id1 = id(1);
+        assertThatThrownBy(() -> reporte.resolver(id1, ResultadoModeracion.RESENA_RETIRADA, AHORA))
                 .isInstanceOf(ConflictoException.class);
     }
 }
