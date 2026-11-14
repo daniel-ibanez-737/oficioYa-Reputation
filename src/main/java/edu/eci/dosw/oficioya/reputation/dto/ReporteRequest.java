@@ -8,7 +8,7 @@ import jakarta.validation.constraints.Size;
 
 /**
  * Reporte de una reseña. La descripción es obligatoria (mínimo 50 caracteres sin contar los espacios del inicio y
- * del final) porque es lo que lee el administrador en el correo.
+ * del final) porque es lo que lee el administrador en el aviso.
  */
 public record ReporteRequest(
         @NotNull MotivoReporte motivo,

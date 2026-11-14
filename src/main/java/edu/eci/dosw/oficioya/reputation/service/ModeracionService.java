@@ -53,7 +53,7 @@ public class ModeracionService {
     }
 
     /**
-     * Un usuario reporta una reseña visible; queda Pendiente de revisión y se envía un correo al administrador
+     * Un usuario reporta una reseña visible; queda Pendiente de revisión y se avisa al administrador
      * (vía Orchestrator) con la reseña, el motivo y la descripción.
      * SUPUESTO: la reseña sigue visible hasta que un administrador resuelva el reporte.
      */
@@ -77,14 +77,14 @@ public class ModeracionService {
     }
 
     /**
-     * El reporte ya quedó guardado; si el correo no se puede enviar se registra el error y no se revierte
+     * El reporte ya quedó guardado; si el aviso no se puede enviar se registra el error y no se revierte
      * (el administrador igual lo ve en GET /reportes).
      */
     private void avisarAlAdministrador(ReporteResena reporte) {
         try {
             orquestador.enviarCorreoReporteResena(AvisoReporteResenaDTO.de(reporte, administradorId, tipoAvisoReporte));
         } catch (IntegracionException e) {
-            log.error("No se pudo enviar el correo del reporte {} al administrador: {}", reporte.getId(),
+            log.error("No se pudo enviar el aviso del reporte {} al administrador: {}", reporte.getId(),
                     e.getMessage());
         }
     }
