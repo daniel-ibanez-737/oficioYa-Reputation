@@ -11,6 +11,6 @@ public interface OrquestadorClient {
     /** Avisa a Worker que un trabajador quedó pausado. */
     void notificarCambioEstadoTrabajador(CambioEstadoTrabajadorDTO cambio);
 
-    /** Pide a Notificaciones enviar un correo al administrador con la reseña reportada. */
+    /** Pide a Notification avisar al administrador de la reseña reportada. */
     void enviarCorreoReporteResena(AvisoReporteResenaDTO aviso);
 }
