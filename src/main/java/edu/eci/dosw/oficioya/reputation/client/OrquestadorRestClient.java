@@ -14,7 +14,7 @@ import edu.eci.dosw.oficioya.reputation.dto.CambioEstadoTrabajadorDTO;
 import edu.eci.dosw.oficioya.reputation.exception.IntegracionException;
 
 /**
- * Implementación REST de {@link OrquestadorClient}. Todo sale por el Orchestrator; las rutas son configurables y
+ * Implementación REST de {@link OrquestadorClient}. Cada llamada sale por el Orchestrator; las rutas son configurables y
  * los formatos son los de las APIs reales de Worker ({@code PUT /api/v1/workers/{id}/status}) y Notification
  * ({@code POST /api/v1/notification}).
  */
@@ -40,7 +40,7 @@ public class OrquestadorRestClient implements OrquestadorClient {
         try {
             restClient.put()
                     .uri(rutaEstadoTrabajador, cambio.trabajadorId())
-                    // Formato real de Worker: {"status": "ACTIVE" | "PAUSED"}
+                    // Worker recibe el estado en inglés: ACTIVE o PAUSED.
                     .body(Map.of("status", cambio.estado() == EstadoTrabajador.PAUSADO ? "PAUSED" : "ACTIVE"))
                     .retrieve()
                     .toBodilessEntity();
